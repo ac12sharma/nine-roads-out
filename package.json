@@ -1,0 +1,17 @@
+{
+  "name": "nine-roads-out",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Nine Roads Out: the most beautiful day drives from Dublin. Static site, no runtime dependencies.",
+  "type": "module",
+  "engines": { "node": ">=18" },
+  "scripts": {
+    "build": "node src/build.mjs",
+    "preview": "node src/build.mjs --preview",
+    "images": "node scripts/render-images.mjs",
+    "serve": "npm run build && npx --yes serve dist"
+  },
+  "devDependencies": {
+    "playwright": "^1.48.0"
+  }
+}
