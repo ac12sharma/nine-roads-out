@@ -191,5 +191,30 @@ const EXTRA={
   hook:{desc:'The Ring of Hook in Wexford: Hook Lighthouse, Tintern Abbey, Baginbun and Duncannon Fort. A day trip by car from Dublin, with the route and tips.',stay:'Fethard-on-Sea, County Wexford',stayLabel:'Fethard-on-Sea',tour:null}
 };
 const TAGS={glendalough:['mountains','heritage'],boyne:['heritage'],cooley:['coast','mountains'],loughcrew:['heritage'],slievebloom:['mountains','heritage'],leinster:['mountains'],cashel:['heritage','mountains'],copper:['coast'],hook:['coast','heritage']};
-TRIPS.forEach(t=>{Object.assign(t,EXTRA[t.id]);t.tags=TAGS[t.id];t.slug=t.id;});
+/* Counties each round trip drives through from Dublin, including the roads there and back.
+   Used by the traveller levels on /how-much-of-ireland/. */
+const COUNTIES={
+  glendalough:['Dublin','Wicklow'],
+  boyne:['Dublin','Meath','Louth'],
+  cooley:['Dublin','Meath','Louth'],
+  loughcrew:['Dublin','Meath','Westmeath','Kildare'],
+  slievebloom:['Dublin','Kildare','Laois','Offaly','Westmeath','Meath'],
+  leinster:['Dublin','Kildare','Carlow','Wexford','Wicklow'],
+  cashel:['Dublin','Kildare','Laois','Kilkenny','Tipperary','Cork'],
+  copper:['Dublin','Kildare','Carlow','Kilkenny','Waterford'],
+  hook:['Dublin','Wicklow','Wexford']
+};
+/* Extra words people use for each drive, so the trip planner can match free text. */
+const WORDS={
+  glendalough:['glendalough','wicklow','sally gap','lough tay','guinness lake','military road','glenmacnass','laragh','round tower','st kevin','wicklow gap','glencree'],
+  boyne:['boyne','newgrange','knowth','slane','tara','meath','monasterboice','bru na boinne','brú na bóinne','passage tomb','solstice','high cross'],
+  cooley:['carlingford','cooley','louth','omeath','mourne','mournes','windy gap','oyster','oysters','long woman','proleek','dolmen','fjord'],
+  loughcrew:['loughcrew','kells','fore','oldcastle','cairn','cairns','westmeath','equinox','hill of the witch'],
+  slievebloom:['slieve bloom','birr','clonmacnoise','shannon','offaly','laois','telescope','leviathan','kinnitty','the cut','athlone'],
+  leinster:['mount leinster','carlow','borris','nine stones','brownshill','dolmen','blackstairs','bunclody','st mullins','barrow'],
+  cashel:['cashel','rock of cashel','tipperary','cahir','vee','knockmealdown','golden vale','hore abbey'],
+  copper:['copper coast','copper','waterford','tramore','dungarvan','bunmahon','geopark','unesco','sea stack','metal man'],
+  hook:['hook','hook head','wexford','lighthouse','tintern','loftus','haunted','duncannon','ring of hook','baginbun','ballyhack','whale','whales']
+};
+TRIPS.forEach(t=>{Object.assign(t,EXTRA[t.id]);t.tags=TAGS[t.id];t.slug=t.id;t.counties=COUNTIES[t.id];t.words=WORDS[t.id];});
 export const FILTERS=[['all','All nine'],['coast','Coast'],['mountains','Mountains'],['heritage','Heritage']];

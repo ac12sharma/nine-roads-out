@@ -71,6 +71,21 @@ for (const t of TRIPS) {
   await og(t.scene, t.ga, t.en, `Day drive from Dublin · ${fmtMins(t.mins)} ${w} · ${t.via.replace(/^And /, 'and ')}`, `${t.id}.jpg`);
 }
 
+// Share card for /how-much-of-ireland/: the county map with the nine drives' counties filled in.
+{
+  const M = JSON.parse(fs.readFileSync(path.join(root, 'src/content/ireland-map.json'), 'utf8'));
+  const done = new Set(TRIPS.flatMap((t) => t.counties));
+  const svg = `<svg viewBox="0 0 ${M.w} ${M.h}" width="${Math.round(M.w * 1.12)}" height="${Math.round(M.h * 1.12)}" xmlns="http://www.w3.org/2000/svg"><path d="${M.ni}" fill="#33473C"/>${Object.entries(M.counties).map(([c, d]) => `<path d="${d}" fill="${done.has(c) ? '#FFD200' : '#4C6B59'}" stroke="#00693E" stroke-width="1.2" stroke-linejoin="round"/>`).join('')}</svg>`;
+  await page.setViewportSize({ width: 1200, height: 630 });
+  await page.evaluate((svg) => {
+    document.querySelectorAll('.og,.icon').forEach((n) => n.remove());
+    document.body.insertAdjacentHTML('afterbegin', `<div class="og" style="background:#00693E;box-shadow:inset 0 0 0 14px #00693E,inset 0 0 0 18px rgba(255,255,255,.9)"><div style="position:absolute;right:70px;top:24px">${svg}</div><div class="brand"><span class="plate">9</span>Nine Roads Out</div><div class="txt" style="right:560px"><div class="en" style="font-size:66px;line-height:.95">How much of Ireland have you driven?</div><div class="meta" style="color:#FFD200">Find your traveller level: 1, 2 or 3</div></div></div>`);
+  }, svg);
+  await page.evaluate(() => { const o = document.querySelector('.og'); o.classList.add('flat'); });
+  await page.addStyleTag({ content: '.og.flat::after{display:none}' });
+  await page.locator('.og').screenshot({ path: path.join(pub, 'og', 'ireland.jpg'), type: 'jpeg', quality: 88 });
+}
+
 for (const [size, file] of [[180, 'apple-touch-icon.png'], [192, 'icon-192.png'], [512, 'icon-512.png']]) {
   await page.setViewportSize({ width: size, height: size });
   await page.evaluate((s) => {

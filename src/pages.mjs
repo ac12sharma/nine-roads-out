@@ -1,8 +1,9 @@
 // Page templates. Every page is plain HTML generated at build time, so it is fast, indexable and works without JavaScript.
 import { esc, fmtMins, mapsURL, fillQ, windWords, sunTimes, fmtClock } from './lib.mjs';
 import { FILTERS } from './content/trips.mjs';
+import { TYPES, mapsSearch } from './content/restaurants.mjs';
 
-export function createRenderer({ config, trips, assets, preview }) {
+export function createRenderer({ config, trips, assets, preview, restaurants, irelandMap }) {
   const adsOn = !!config.adsense.client && !preview;
   const year = new Date().getFullYear();
   const abs = (p) => config.siteUrl + p;
@@ -30,11 +31,12 @@ export function createRenderer({ config, trips, assets, preview }) {
 
   function header(u, active, onHome) {
     const h = (p) => (onHome && p.startsWith('/#') ? p.slice(1) : u(p));
-    const links = [['/#drives', 'Drives', 'drives'], ['/#map', 'Drive-time map', 'map'], ['/driving-guide/', 'Driving guide', 'guide'], ['/about/', 'About', 'about']];
+    const links = [['/#drives', 'Drives', 'drives'], ['/#map', 'Drive times', 'map'], ['/how-much-of-ireland/', 'Your Ireland', 'ireland'], ['/driving-guide/', 'Driving guide', 'guide'], ['/about/', 'About', 'about']];
     const nav = links.map(([p, l, k]) => `<a href="${h(p)}"${active === k ? ' aria-current="page"' : ''}>${l}</a>`).join('');
     return `<header class="mast"><div class="mast-in">
 <a class="brand" href="${onHome ? '#top' : u('/')}">${logo}<span class="brand-t">${esc(config.name)}</span></a>
 <nav class="nav" aria-label="Main">${nav}</nav>
+<a class="lvl-pill" href="${u('/how-much-of-ireland/')}" hidden></a>
 <details class="menu"><summary>Menu</summary><nav class="menu-panel" aria-label="Main menu">${nav}</nav></details>
 </div></header>`;
   }
@@ -44,13 +46,13 @@ export function createRenderer({ config, trips, assets, preview }) {
 <div class="foot-brand"><a class="brand" href="${u('/')}">${logo}<span class="brand-t">${esc(config.name)}</span></a>
 <p>An independent guide to the most beautiful day drives from Dublin city. Made in ${esc(config.owner.city)}.</p></div>
 <nav aria-label="The drives"><h2>The drives</h2><ul>${trips.map((t) => `<li><a href="${u(tripPath(t))}">${esc(t.en)}</a></li>`).join('')}</ul></nav>
-<nav aria-label="This site"><h2>This site</h2><ul><li><a href="${u('/driving-guide/')}">Driving guide</a></li><li><a href="${u('/about/')}">About</a></li><li><a href="${u('/contact/')}">Contact</a></li><li><a href="${u('/privacy/')}">Privacy and cookies</a></li><li><a href="${u('/terms/')}">Terms of use</a></li>${adsOn ? '<li><button type="button" class="linkish" data-consent>Cookie settings</button></li>' : ''}</ul></nav>
+<nav aria-label="This site"><h2>This site</h2><ul><li><a href="${u('/how-much-of-ireland/')}">Your Ireland map</a></li><li><a href="${u('/driving-guide/')}">Driving guide</a></li><li><a href="${u('/about/')}">About</a></li><li><a href="${u('/contact/')}">Contact</a></li><li><a href="${u('/privacy/')}">Privacy and cookies</a></li><li><a href="${u('/terms/')}">Terms of use</a></li>${adsOn ? '<li><button type="button" class="linkish" data-consent>Cookie settings</button></li>' : ''}</ul></nav>
 </div>
 <div class="wrap foot-base"><p>Some links on this site are affiliate links. If you book through them, we may earn a commission at no extra cost to you.${adsOn ? ' Ads are served by Google.' : ''} Drive times are approximate. Details were last checked in ${esc(config.checked)}, but opening times and access change, so check official sites before you go.</p>
 <p>© ${year} ${esc(config.name)}. Illustrations drawn in code.</p></div></footer>`;
   }
 
-  function layout({ path, depth, title, desc, ogImage = '/og/home.jpg', ogType = 'website', jsonld = [], body, active = '', onHome = false, fragment = false, preload = '' }) {
+  function layout({ path, depth, title, desc, ogImage = '/og/home.jpg', ogType = 'website', jsonld = [], body, active = '', onHome = false, fragment = false, preload = '', tripId = '' }) {
     const u = urlFor(depth);
     const adsHead = adsOn ? `<meta name="google-adsense-account" content="${esc(config.adsense.client)}">
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${esc(config.adsense.client)}" crossorigin="anonymous"></script>` : '';
@@ -85,6 +87,7 @@ ${jsonld.map((j) => `<script type="application/ld+json">${JSON.stringify(j).repl
 ${header(u, active, onHome)}
 <main id="main">${body}</main>
 ${footer(u)}
+<div id="planner" data-src="${u(assets.data)}" data-root="${preview ? (depth ? '../'.repeat(depth) : './') : '/'}" data-index="${preview ? 'index.html' : ''}" data-ai="${config.chat.ai && !preview ? esc(config.chat.endpoint) : ''}" data-site="${esc(config.siteUrl)}" data-trip="${tripId}"></div>
 <script src="${u(assets.scenes)}" defer></script>
 <script src="${u(assets.app)}" defer></script>`;
     if (fragment) return head + '\n' + doc + '\n';
@@ -134,6 +137,25 @@ ${doc}
     return `<section class="plan" aria-labelledby="plan-${t.id}"><h2 id="plan-${t.id}">Plan this trip</h2><ul>${items.map((it) => `<li><a href="${esc(it.href)}" target="_blank" rel="sponsored noopener"><span class="plan-t">${esc(it.title)}</span><span class="plan-n">${esc(it.note)}</span></a></li>`).join('')}</ul><p class="plan-d">Affiliate links: if you book through them, we may earn a commission at no extra cost to you.</p></section>`;
   }
 
+  function eatSection(t) {
+    const list = restaurants[t.id] || [];
+    if (!list.length) return '';
+    const types = TYPES.filter((ty) => list.some((r) => r.type === ty));
+    const cuisines = [...new Set(list.flatMap((r) => r.cuisine))].filter((c) => c !== 'Irish');
+    const chip = (f, label, n, on = false) => `<button type="button" class="chip" data-f="${esc(f)}" aria-pressed="${on}">${esc(label)} <span class="n">${n}</span></button>`;
+    const chips = [chip('all', 'All', list.length, true), ...types.map((ty) => chip('type:' + ty, ty, list.filter((r) => r.type === ty).length)), ...cuisines.map((c) => chip('cuisine:' + c, c, list.filter((r) => r.cuisine.includes(c)).length))].join('');
+    return `<section class="eat" aria-labelledby="eat-${t.id}" data-eat>
+<h2 class="sec-h" id="eat-${t.id}">Where to eat</h2>
+${list.length > 2 ? `<div class="filters eat-filters" role="group" aria-label="Filter places to eat">${chips}</div>` : ''}
+<ul class="eat-list">${list.map((r) => `<li class="eat-item" data-type="${esc(r.type)}" data-cuisine="${esc(r.cuisine.join('|'))}">
+<div class="eat-top"><h3>${esc(r.name)}</h3><span class="eat-type">${esc(r.type)}</span></div>
+<p class="eat-where">${esc(r.town)}, near ${esc(r.near.replace(/^Home (from|via) /, ''))}. ${esc(r.cuisine.join(', '))}.</p>
+<p class="eat-note">${esc(r.note)}</p>
+<p class="eat-links"><a href="${esc(mapsSearch(r))}" target="_blank" rel="noopener">Find on Google Maps</a>${r.url ? `<a href="${esc(r.url)}" target="_blank" rel="noopener">Website</a>` : ''}</p></li>`).join('')}</ul>
+<p class="eat-disc">Listings are independent and unpaid. Opening hours change, so check before you go. <button type="button" class="linkish eat-ask" data-open-planner>Ask the trip planner</button></p>
+</section>`;
+  }
+
   function daylightBlock() {
     const s = sunTimes(new Date());
     const dh = (s.set - s.rise) / 36e5;
@@ -159,7 +181,7 @@ ${doc}
 <p class="hero-ga" lang="ga">Naoi mBóthar Amach</p>
 <h1>Nine Roads Out</h1>
 <p class="hero-lede">Bog passes, a glacial fjord, cliff coasts and tombs older than the pyramids. The nine most beautiful day drives from Dublin, with every stop, every road number and what to know before you go.</p>
-<p class="hero-ctas"><a class="btn btn-light" href="#drives">See the nine drives</a><a class="hero-link" href="#map">Plan by drive time</a></p>
+<p class="hero-ctas"><a class="btn btn-light" href="#drives">See the nine drives</a><a class="hero-link" href="#map">Plan by drive time</a><button type="button" class="hero-link hero-ask" data-open-planner>Ask the trip planner</button></p>
 </div>
 </section>
 
@@ -180,6 +202,11 @@ ${adSlot('home', 'wrap')}
 <div><ul class="index" id="index">${rows}</ul><p class="index-note">Times run from Dublin city centre to the first big stop. The bar shows total hours at the wheel for the round trip.</p></div>
 </div>
 </section>
+
+<section class="wrap lvl-teaser" aria-labelledby="lvl-h"><div class="lvl-band">
+<div><h2 id="lvl-h">How much of Ireland have you driven?</h2><p>Tick off drives and counties on the map to find your traveller level, from Level 1 day-tripper to Level 3 grand tourer.</p></div>
+<div class="lvl-band-r"><p class="lvl-now" data-lvl-now hidden></p><a class="btn" href="${u('/how-much-of-ireland/')}">Find your level</a></div>
+</div></section>
 
 <section id="before" class="wrap before">
 <div class="sec-head"><h2>Before you set off</h2></div>
@@ -238,10 +265,12 @@ ${daylightBlock()}
 </dl>
 <p class="lede">${esc(t.lede)}</p>
 <div class="share" data-url="${esc(abs(path))}" data-title="${esc(shareText)}"><button type="button" class="share-b" data-share="copy">Copy link</button><a class="share-b" href="https://wa.me/?text=${encodeURIComponent(shareText + ' ' + abs(path))}" target="_blank" rel="noopener">Send on WhatsApp</a><button type="button" class="share-b" data-share="native" hidden>Share</button><span class="share-msg" role="status"></span></div>
+<div class="done"><button type="button" class="done-b" data-done="${t.id}" data-counties="${esc(t.counties.join('|'))}" aria-pressed="false"><span class="done-box" aria-hidden="true"></span><span class="done-t">I've done this drive</span></button><p class="done-msg" data-done-msg aria-live="polite">Tick it off to add ${t.counties.length} counties to <a href="${u('/how-much-of-ireland/')}">your Ireland map</a>.</p></div>
 ${adSlot('inArticle')}
 <h2 class="sec-h">The route</h2>
 <ol class="route">${route}</ol>
 <aside class="know"><h2 class="know-tag">Know before you go</h2><ul>${t.know.map((k) => `<li>${esc(k)}</li>`).join('')}</ul><p class="official">${t.links.map((l) => `<a href="${esc(l[1])}" target="_blank" rel="noopener">${esc(l[0])}</a>`).join('')}</p></aside>
+${eatSection(t)}
 </div>
 <aside class="trip-side" aria-label="Plan this drive"><div class="side-in">
 <a class="btn btn-block" href="${esc(mapsURL(t))}" target="_blank" rel="noopener">Open the route in Google Maps</a>
@@ -259,7 +288,7 @@ ${next ? `<a class="pn pn-next" href="${u(tripPath(next))}"><span class="pn-k">N
 ${adSlot('footer', 'wrap')}
 <section class="wrap more"><h2>More drives from Dublin</h2><ul class="cards cards-3">${more.map((m) => card(m, u)).join('')}</ul></section>`;
     return layout({
-      path, depth: 1, ogType: 'article', ogImage: `/og/${t.id}.jpg`,
+      path, depth: 1, ogType: 'article', ogImage: `/og/${t.id}.jpg`, tripId: t.id,
       title: `${t.en} day trip from Dublin: ${t.via.replace(/^And /, 'and ')} | ${config.name}`,
       desc: t.desc,
       preload: `<link rel="preload" as="image" href="${u('/images/scenes/' + t.id + '-plate.webp')}" media="(min-width: 641px)"><link rel="preload" as="image" href="${u('/images/scenes/' + t.id + '-plate-sm.webp')}" media="(max-width: 640px)">`,
@@ -399,7 +428,10 @@ ${adSlot('guide')}
 <ul>
 <li><strong>Server logs.</strong> Our hosting provider records technical information such as IP address, browser type and the page requested, to keep the site secure and working. These logs are kept for a short period and are not used to identify you.</li>
 <li><strong>Analytics.</strong> We may use Cloudflare Web Analytics to count visits. It does not use cookies and does not track you across other sites.</li>
+<li><strong>Your Ireland map.</strong> If you tick off drives or counties, that list is saved in your browser's local storage on your device so it is there next time. It is never sent to us, and clearing your browser data removes it.</li>
 </ul>
+<h2>Trip planner</h2>
+<p>The trip planner answers questions about drives, places to eat and timing inside your browser, using the information on this site.${config.chat.ai ? ' Questions it cannot answer that way are sent to Anthropic, the company that provides the AI model behind it, to generate a reply. Please do not type personal details into it.' : ' What you type is not sent anywhere.'}</p>
 <h2>Advertising</h2>
 <p>This site shows ads served by Google AdSense. If you are in the European Economic Area, the UK or Switzerland, you will be asked for your consent before any advertising cookies are set. With your consent, Google and its partners may use cookies to show ads based on your interests and to measure them. Without it, Google may still show limited, non-personalised ads.</p>
 <p>You can change your choice at any time with the Cookie settings link at the bottom of every page. Google explains how it uses information from sites like this one at <a href="https://policies.google.com/technologies/partner-sites" target="_blank" rel="noopener">policies.google.com</a>.</p>
@@ -435,11 +467,60 @@ ${adSlot('guide')}
     });
   }
 
+  function ireland() {
+    const u = urlFor(1), M = irelandMap, names = Object.keys(M.counties);
+    const all = new Set(trips.flatMap((t) => t.counties));
+    const lvlFor = (n) => (n >= 18 ? 3 : n >= 9 ? 2 : n >= 1 ? 1 : 0);
+    const svg = `<svg class="ie-map" viewBox="0 0 ${M.w} ${M.h}" role="group" aria-label="Map of the 26 counties of the Republic of Ireland. Select a county to mark it as driven.">
+<path class="ie-ni" d="${M.ni}"/><text class="ie-ni-lab" x="300" y="92" text-anchor="middle">Northern Ireland</text>
+<g class="ie-counties">${names.map((c) => `<path class="ie-c" d="${M.counties[c]}" data-county="${esc(c)}" tabindex="0" role="checkbox" aria-checked="false" aria-label="${esc(c)}"><title>${esc(c)}</title></path>`).join('')}</g>
+<circle class="ie-dub" cx="${M.dublin[0]}" cy="${M.dublin[1]}" r="3.5"/><text class="ie-dub-lab" x="${M.dublin[0] + 7}" y="${M.dublin[1] + 4}">Dublin</text>
+</svg>`;
+    const body = `<nav class="wrap crumbs" aria-label="Breadcrumb"><ol><li><a href="${u('/')}">Home</a></li><li aria-current="page">Your Ireland</li></ol></nav>
+<section class="wrap ie">
+<header class="prose-head"><h1>How much of Ireland have you driven?</h1><p class="lede">Tick off the drives you've done and tap any other county you've driven in. You'll see how much of the Republic's 26 counties you've covered, and what level of traveller that makes you.</p></header>
+<div class="ie-grid">
+<figure class="ie-fig">${svg}<figcaption><span class="ie-key ie-key-d"></span>From drives you've ticked off <span class="ie-key ie-key-m"></span>Counties you've added. Tap a county to add or remove it. Boundaries from Natural Earth.</figcaption></figure>
+<div class="ie-side">
+<div class="lvl-card" aria-live="polite">
+<div class="lvl-badge"><span class="lvl-plate" data-lvl-num>0</span><div><p class="lvl-k" data-lvl-k>Your level</p><p class="lvl-name" data-lvl-name>Not on the road yet</p></div></div>
+<p class="lvl-pct"><span data-lvl-pct>0</span>%<span class="lvl-of"> of Ireland's counties</span></p>
+<p class="lvl-count" data-lvl-count>0 of 26 counties driven</p>
+<div class="lvl-bar" aria-hidden="true"><i data-lvl-fill></i><span class="lvl-tick" style="left:34.62%"></span><span class="lvl-tick" style="left:69.23%"></span></div>
+<div class="lvl-scale" aria-hidden="true"><span>Level 1</span><span style="left:34.62%">Level 2</span><span style="left:69.23%">Level 3</span></div>
+<p class="lvl-next" data-lvl-next>Tick off a drive or tap a county to start.</p>
+<div class="share lvl-share" data-url="${esc(abs('/how-much-of-ireland/'))}" data-title="How much of Ireland have you driven?"><button type="button" class="share-b" data-share="copy-level">Copy my result</button><a class="share-b" data-share-wa href="https://wa.me/?text=${encodeURIComponent('How much of Ireland have you driven? ' + abs('/how-much-of-ireland/'))}" target="_blank" rel="noopener">Send on WhatsApp</a><button type="button" class="share-b" data-share="native-level" hidden>Share</button><span class="share-msg" role="status"></span></div>
+</div>
+<h2 class="sec-h">Drives you've done</h2>
+<ul class="ie-drives">${trips.map((t) => `<li><label class="ie-drive"><input type="checkbox" data-drive="${t.id}" data-counties="${esc(t.counties.join('|'))}"><span class="ie-drive-t"><span class="ie-drive-n">${esc(t.en)}</span><span class="ie-drive-c">${t.counties.join(', ')}</span></span></label><a class="ie-drive-link" href="${u(tripPath(t))}">See drive</a></li>`).join('')}</ul>
+</div>
+</div>
+<section class="ie-all" aria-labelledby="ie-all-h"><h2 class="sec-h" id="ie-all-h">All 26 counties</h2><p class="sub">Tap any county you've driven in, on these drives or any other trip.</p>
+<ul class="ie-chips">${names.map((c) => `<li><button type="button" class="chip ie-chip" data-county-chip="${esc(c)}" aria-pressed="false">${esc(c)}</button></li>`).join('')}</ul></section>
+<section class="ie-how prose" aria-labelledby="ie-how-h"><h2 id="ie-how-h">How the levels work</h2>
+<table class="t"><thead><tr><th scope="col">Level</th><th scope="col">Counties driven</th><th scope="col">Share of Ireland</th></tr></thead><tbody>
+<tr><th scope="row">Level 1, day-tripper</th><td>1 to 8</td><td>4% to 31%</td></tr>
+<tr><th scope="row">Level 2, road-tripper</th><td>9 to 17</td><td>35% to 65%</td></tr>
+<tr><th scope="row">Level 3, grand tourer</th><td>18 to 26</td><td>69% to 100%</td></tr>
+</tbody></table>
+<p>The share is of the 26 counties in the Republic. A county counts once you've driven on its roads, including on the way to somewhere else. All nine drives on this site together take in ${all.size} counties, which makes you a Level ${lvlFor(all.size)} traveller. Level 3 means heading west as well.</p>
+<p>Your list is saved only in this browser, on this device. Nothing is sent to us.</p>
+<p><button type="button" class="share-b" data-reset>Clear my map</button></p>
+</section>
+</section>`;
+    return layout({
+      path: '/how-much-of-ireland/', depth: 1, active: 'ireland', ogImage: '/og/ireland.jpg',
+      title: `How much of Ireland have you driven? Find your traveller level | ${config.name}`,
+      desc: "Tick off the counties you've driven in and the drives you've done to see how much of Ireland you've covered by road, and whether you're a Level 1, 2 or 3 traveller.",
+      body,
+    });
+  }
+
   function notFound() {
     const u = urlFor(0);
     const body = `<section class="wrap prose-page nf"><h1>This road doesn't go anywhere</h1><p class="lede">The page you were looking for isn't here. Try one of the nine drives instead.</p><ul class="cards cards-3">${trips.slice(0, 3).map((t) => card(t, u)).join('')}</ul><p><a class="btn" href="${u('/')}">Go to the home page</a></p></section>`;
     return layout({ path: '/404.html', depth: 0, title: `Page not found | ${config.name}`, desc: 'This page could not be found.', body });
   }
 
-  return { home, trip, guide, about, contact, privacy, terms, notFound };
+  return { home, trip, guide, about, contact, privacy, terms, notFound, ireland };
 }
