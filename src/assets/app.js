@@ -221,7 +221,7 @@ function home(trips){
 function planner(){
   const host=$('#planner');if(!host)return;
   const ROOT=host.getAttribute('data-root')||'/',IDX=host.getAttribute('data-index')||'',AI=host.getAttribute('data-ai')||'',PAGE_TRIP=host.getAttribute('data-trip')||'';
-  const urlOf=s=>ROOT+s+'/'+IDX,img=id=>ROOT+'images/scenes/'+id+'-card.webp',guide=a=>ROOT+'driving-guide/'+IDX+(a?'#'+a:''),mapUrl=ROOT+'how-much-of-ireland/'+IDX;
+  const urlOf=s=>ROOT+s+'/'+IDX,img=id=>ROOT+'images/scenes/'+id+'-card.webp',guide=a=>ROOT+'driving-guide/'+IDX+(a?'#'+a:''),mapUrl=ROOT+'how-much-of-ireland/'+IDX,hireUrl=ROOT+'car-hire-dublin/'+IDX,noCarUrl=ROOT+'day-trips-from-dublin-without-a-car/'+IDX;
   let D=null,loading=null;
   const load=()=>D?Promise.resolve(D):(loading||(loading=fetch(host.getAttribute('data-src')).then(r=>{if(!r.ok)throw new Error('load');return r.json();}).then(d=>(D=d)).catch(e=>{loading=null;throw e;})));
   host.innerHTML='<button type="button" class="pl-launch" aria-expanded="false" aria-controls="pl-panel">Plan a trip</button>'+
@@ -255,7 +255,7 @@ function planner(){
   }
   const byId=id=>D.trips.filter(t=>t.id===id)[0];
   const card=t=>'<a class="pl-card" href="'+urlOf(t.slug)+'"><img src="'+img(t.id)+'" alt="" width="96" height="64" loading="lazy"><span><span class="pl-card-n">'+escH(t.en)+'</span><span class="pl-card-m">'+fmtMins(t.mins)+' '+t.wind+', about '+fmtMins(t.drive*60)+' at the wheel</span></span></a>';
-  const eatRow=(r,t)=>'<div class="pl-eat"><span class="pl-eat-n">'+escH(r.name)+'</span><span class="pl-eat-m">'+escH(r.type)+' in '+escH(r.town)+(t?', on the '+escH(t.en)+' drive':'')+'</span><a href="'+escH(r.map)+'" target="_blank" rel="noopener">Map</a></div>';
+  const eatRow=(r,t)=>'<div class="pl-eat"><span class="pl-eat-n">'+escH(r.name)+'</span><span class="pl-eat-m">'+(r.featured?'Featured · ':'')+escH(r.type)+' in '+escH(r.town)+(t?', on the '+escH(t.en)+' drive':'')+'</span><a href="'+escH(r.map)+'" target="_blank" rel="noopener">Map</a></div>';
   const TAGNAME={coast:'the coast',mountains:'mountains',heritage:'history and ruins'};
   const TYPEPL={'Café':'cafés','Pub':'pubs','Restaurant':'restaurants','Fine dining':'fine dining'};
 
@@ -298,7 +298,8 @@ function planner(){
     else if(/\b(sunset|sunrise|daylight|dark|light)\b/.test(T))it.topic='daylight';
     else if(/\b(weather|rain|fog|snow|forecast)\b/.test(T))it.topic='weather';
     else if(/\broad signs?\b|\bsigns?\b/.test(T)&&!it.food)it.topic='signs';
-    else if(/\b(car hire|hire a car|rent a car|rental|no car|without a car|tour|tours)\b/.test(T))it.topic='car';
+    else if(/\b(no car|without a car|don't have a car|dont have a car|tours?|guided|public transport|bus|by bus|buses|train|trains)\b/.test(T))it.topic='nocar';
+    else if(/\b(car hire|hire a car|hiring a car|rent a car|renting|rental|hire car|insurance|excess|automatic)\b/.test(T))it.topic='car';
     it.level=/\b(level|levels|how much of ireland|counties|my map|badge|traveller)\b/.test(T);
     it.another=/\b(another|other|different|something else|next)\b/.test(T);
     it.similar=/\b(similar|like this|like that)\b/.test(T);
@@ -380,7 +381,8 @@ function planner(){
       bot('Today in Dublin the sun rises at '+s.rise.toLocaleTimeString('en-IE',TF)+' and sets at '+s.set.toLocaleTimeString('en-IE',TF)+', which is '+fmtMins(dh*60)+' of daylight. That\'s enough for '+(ok.length===D.trips.length?'any of the nine drives':ok.length+' of the nine drives')+', allowing about three hours for stops.'+link(guide('daylight'),'Daylight by month'),chips(['Under an hour','Surprise me']));}
     else if(k==='weather')bot('On the mountain and coast drives, the weather is the view: in fog you see nothing at all. Check Met Éireann the night before and keep a closer drive in reserve. Some mountain roads aren\'t gritted in ice or snow.'+link(guide('weather'),'Weather tips'),chips(['History and ruins','Under an hour']));
     else if(k==='signs')bot('Blue signs mean motorways, green mean national roads, white mean regional roads and brown point to attractions. Place names show Irish in italics above English in capitals.'+link(guide('signs'),'Reading Irish road signs'),chips(['Speed limits','Tolls']));
-    else bot('Most of these drives need a car. If you\'re hiring one in Dublin, book early for summer weekends and ask how the company handles the M50 toll. Without a car, the Glendalough, Boyne Valley and Cashel pages link to guided day tours from Dublin.'+link(guide('car-hire'),'Car hire tips'),chips(['Glendalough','Boyne Valley','Cashel']));
+    else if(k==='nocar')bot('Glendalough and the Boyne Valley work well without a car: there\'s a daily bus to Glendalough, and guided tours from Dublin go to Newgrange. You can reach Carlingford, Tramore and Cashel by public transport too, but most of the other drives need a car.'+link(noCarUrl,'Which drives work without a car'),chips(['Glendalough','Boyne Valley','Hiring a car']));
+    else bot('Most of these drives need a car. Book early for summer weekends, especially if you need an automatic, check the insurance excess before you sign, and ask who pays the M50 toll.'+link(hireUrl,'Hiring a car in Dublin: what to know'),chips(['Under an hour','No car? Tours and buses']));
   }
   function level(){
     const st=statsOf(readP());
@@ -409,4 +411,9 @@ if(trips)home(trips);
 daylight(trips);
 refreshLevels();
 planner();
+/* ---------- print route card ---------- */
+$$('[data-print]').forEach(b=>b.addEventListener('click',()=>window.print()));
+
+/* ---------- newsletter preview ---------- */
+$$('form[data-demo]').forEach(f=>f.addEventListener('submit',e=>{e.preventDefault();const m=f.parentNode.querySelector('.news-small');if(m)m.textContent='This is the preview: sign-ups go live once a newsletter provider is connected in site.config.mjs.';}));
 })();

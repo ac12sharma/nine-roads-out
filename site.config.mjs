@@ -13,8 +13,9 @@ export default {
   },
 
   // A real address people can write to. Google AdSense expects a working contact route.
-  // Example: 'hello@nineroadsout.com'. Leave empty and the Contact page says so instead.
-  contactEmail: '',
+  // Set up free forwarding for it with Cloudflare Email Routing when you add the domain (see README).
+  // Leave empty and the Contact page says so instead.
+  contactEmail: 'hello@nineroadsout.com',
 
   // Google AdSense. Paste your publisher ID (ca-pub-…) once your account exists.
   // Leave `slots` empty to use Auto ads, or paste ad-unit IDs to place ads in the reserved spots.
@@ -27,7 +28,7 @@ export default {
       inArticle: '', // after the introduction on each drive page
       sidebar: '',   // under the booking links on each drive page (wide screens)
       footer: '',    // above "More drives" on each drive page
-      guide: '',     // middle of the driving guide
+      guide: '',     // middle of the driving guide, the car hire guide and the theme pages
     },
   },
 
@@ -42,6 +43,21 @@ export default {
     carHire: { partner: 'Discover Cars', url: 'https://www.discovercars.com/' },
     stays: { partner: 'Booking.com', url: 'https://www.booking.com/searchresults.html?ss={q}' },
     tours: { partner: 'GetYourGuide', url: 'https://www.getyourguide.com/s/?q={q}' },
+  },
+
+  // Newsletter sign-up, shown on the home page, every drive page and the theme pages.
+  // Create a free list with Buttondown, Kit (ConvertKit), Mailchimp or similar, find its embed
+  // form, and copy the form's action URL and the name of its email field here.
+  //   Buttondown: action 'https://buttondown.com/api/emails/embed-subscribe/YOURNAME', field 'email'
+  //   Kit:        action 'https://app.kit.com/forms/FORM_ID/subscriptions', field 'email_address'
+  //   Mailchimp:  action from the embed code (…list-manage.com/subscribe/post?u=…&id=…), field 'EMAIL'
+  // Leave action empty to hide the sign-up box.
+  newsletter: {
+    action: '',
+    field: 'email',
+    hidden: {}, // any extra hidden fields the provider's embed code includes, as { name: 'value' }
+    heading: 'One good drive a month',
+    pitch: 'A drive for the season, closures worth knowing about and new places to eat on the way. Free, and at most once a month.',
   },
 
   // Trip planner chat. It always works in the browser from the site's own data.
