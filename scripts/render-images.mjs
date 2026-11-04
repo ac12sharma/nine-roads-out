@@ -55,7 +55,7 @@ for (const t of TRIPS) {
   await still(t.scene, 1600, 700, `${t.id}-plate.webp`);
   await still(t.scene, 900, 675, `${t.id}-plate-sm.webp`, 0.72);
   await still(t.scene, 960, 640, `${t.id}-card.webp`, 0.7);
-  await still(t.scene, 640, 427, `${t.id}-card-sm.webp`, 0.7); // phones: srcset picks this below about 640 device pixels
+  await still(t.scene, 720, 480, `${t.id}-card-sm.webp`, 0.7); // phones: srcset picks this up to 720 device pixels
 }
 if (only) { await browser.close(); console.log(`Rendered scene stills matching "${only}".`); process.exit(0); }
 

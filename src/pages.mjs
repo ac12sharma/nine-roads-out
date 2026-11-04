@@ -125,9 +125,9 @@ ${doc}
   }
 
   /* ---------- shared pieces ---------- */
-  // Scene card image with a 640px version for phones. `sizes` is the width the image is shown at.
+  // Scene card image with a 720px version for phones. `sizes` is the width the image is shown at.
   const CARD_SIZES = { card: '(max-width: 640px) calc(100vw - 32px), (max-width: 1000px) 46vw, 360px', hub: '(max-width: 900px) 46vw, 280px', wide: '(max-width: 640px) calc(100vw - 32px), 420px' };
-  const cardImg = (id, u, sizes, eager = false) => `<img src="${u('/images/scenes/' + id + '-card.webp')}" srcset="${u('/images/scenes/' + id + '-card-sm.webp')} 640w, ${u('/images/scenes/' + id + '-card.webp')} 960w" sizes="${CARD_SIZES[sizes]}" width="960" height="640" alt="" loading="${eager ? 'eager' : 'lazy'}" decoding="async">`;
+  const cardImg = (id, u, sizes, eager = false) => `<img src="${u('/images/scenes/' + id + '-card.webp')}" srcset="${u('/images/scenes/' + id + '-card-sm.webp')} 720w, ${u('/images/scenes/' + id + '-card.webp')} 960w" sizes="${CARD_SIZES[sizes]}" width="960" height="640" alt="" loading="${eager ? 'eager' : 'lazy'}" decoding="async">`;
 
   function card(t, u, eager = false) {
     return `<li class="card" data-id="${t.id}"><a class="card-a" href="${u(tripPath(t))}">
