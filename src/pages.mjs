@@ -435,7 +435,7 @@ ${adSlot('guide')}
 <p>Opening arrangements, closures, booking rules and parking are checked against official sources such as Heritage Ireland, the National Parks and Wildlife Service, Coillte and local tourism offices. Each drive page links to the sources that matter for it. Details were last checked in ${esc(config.checked)}.</p>
 <p>Things change. If you spot something out of date, please <a href="${u('/contact/')}">get in touch</a> and it will be fixed.</p>
 <h2>How the site is funded</h2>
-<p>The site is free to use. It is paid for by advertising, by affiliate links to car hire, places to stay and tours, and by featured listings. If you book through an affiliate link, the site may earn a commission at no extra cost to you.</p>
+<p>The site is free to use. It is paid for by ${adsOn ? 'advertising, by ' : ''}affiliate links to car hire, places to stay and tours, and by featured listings.${adsOn ? '' : ' It does not show ads at the moment.'} If you book through an affiliate link, the site may earn a commission at no extra cost to you.</p>
 <p>Featured listings are paid placements for businesses on the routes, and they are always labelled. Nobody can pay to have a drive included, to change what we say about a place, or to remove an independent listing. <a href="${u('/advertise/')}">How advertising works</a>.</p>
 <h2>The pictures</h2>
 <p>The scenes are illustrations drawn in code, in the spirit of the old Irish railway and tourism posters. Each one shows the drive's signature view, from the round tower at Glendalough to the lighthouse at Hook Head.</p>`,
@@ -460,6 +460,10 @@ ${adSlot('guide')}
   function privacy() {
     const e = config.contactEmail;
     const contactLine = (u) => (e ? `by email at <a href="mailto:${esc(e)}">${esc(e)}</a>` : `through the <a href="${u('/contact/')}">contact page</a>`);
+    // Every statement below follows site.config.mjs, so the policy describes what the built site really does.
+    const newsOn = !!(config.newsletter && config.newsletter.action);
+    const cfToken = !!config.analytics.cloudflareToken;
+    const thirdParty = [adsOn && "Google's ad script", cfToken && "Cloudflare's analytics script"].filter(Boolean);
     return prosePage({
       path: '/privacy/', title: 'Privacy and cookies', h1: 'Privacy and cookies',
       lede: `This policy explains what information this site collects, why, and the choices you have. Last updated ${esc(config.checked)}.`,
@@ -468,7 +472,7 @@ ${adSlot('guide')}
 <h2>Who is responsible</h2>
 <p>${esc(config.name)} is run by ${esc(config.owner.name)} in ${esc(config.owner.city)}, Ireland, who is the data controller for this site. You can get in touch ${contactLine(u)}.</p>
 <h2>What we collect</h2>
-<p>${config.newsletter && config.newsletter.action ? 'You do not need an account to use this site, and we only ask for your email address if you choose to sign up for the newsletter.' : 'You do not need an account to use this site and we do not ask for your name or email address.'} The fonts, images and scripts that make up the site are served from our own host, so loading a page does not send your details to font or script services.</p>
+<p>${config.newsletter && config.newsletter.action ? 'You do not need an account to use this site, and we only ask for your email address if you choose to sign up for the newsletter.' : 'You do not need an account to use this site and we do not ask for your name or email address.'} ${thirdParty.length ? `The fonts and images that make up the site are served from our own host. The exceptions are ${thirdParty.join(' and ')}, described below.` : 'The fonts, images and scripts that make up the site are served from our own host, so loading a page does not send your details to font or script services.'} This site does not set any cookies of its own.</p>
 <ul>
 <li><strong>Server logs.</strong> Our hosting provider records technical information such as IP address, browser type and the page requested, to keep the site secure and working. These logs are kept for a short period and are not used to identify you.</li>
 <li><strong>Analytics.</strong> We may use Cloudflare Web Analytics to count visits. It does not use cookies and does not track you across other sites.</li>
@@ -479,12 +483,12 @@ ${config.newsletter && config.newsletter.action ? `<h2>Newsletter</h2>
 ` : ''}<h2>Trip planner</h2>
 <p>The trip planner answers questions about drives, places to eat and timing inside your browser, using the information on this site.${config.chat.ai ? ' Questions it cannot answer that way are sent to Anthropic, the company that provides the AI model behind it, to generate a reply. Please do not type personal details into it.' : ' What you type is not sent anywhere.'}</p>
 <h2>Advertising</h2>
-<p>This site shows ads served by Google AdSense. If you are in the European Economic Area, the UK or Switzerland, you will be asked for your consent before any advertising cookies are set. With your consent, Google and its partners may use cookies to show ads based on your interests and to measure them. Without it, Google may still show limited, non-personalised ads.</p>
-<p>You can change your choice at any time with the Cookie settings link at the bottom of every page. Google explains how it uses information from sites like this one at <a href="https://policies.google.com/technologies/partner-sites" target="_blank" rel="noopener">policies.google.com</a>.</p>
+${adsOn ? `<p>This site shows ads served by Google AdSense. If you are in the European Economic Area, the UK or Switzerland, you will be asked for your consent before any advertising cookies are set. With your consent, Google and its partners may use cookies to show ads based on your interests and to measure them. Without it, Google may still show limited, non-personalised ads.</p>
+<p>You can change your choice at any time with the Cookie settings link at the bottom of every page. Google explains how it uses information from sites like this one at <a href="https://policies.google.com/technologies/partner-sites" target="_blank" rel="noopener">policies.google.com</a>.</p>` : `<p>This site does not show ads at the moment, and no advertising cookies are set. If that changes, this policy will be updated before any ads appear, and visitors in the European Economic Area, the UK and Switzerland will be asked for consent before advertising cookies are used.</p>`}
 <h2>Affiliate links</h2>
 <p>Some links to car hire, accommodation and tour companies are affiliate links. When you follow one, that company may set its own cookies so it can credit us if you book. Their privacy policies apply on their sites.</p>
 <h2>Legal basis</h2>
-<p>We rely on your consent for advertising cookies, and on our legitimate interest in running a secure, working website for server logs and cookieless analytics.</p>
+<p>${[adsOn && 'advertising cookies', newsOn && 'the newsletter'].filter(Boolean).length ? `We rely on your consent for ${[adsOn && 'advertising cookies', newsOn && 'the newsletter'].filter(Boolean).join(' and ')}, and on` : 'We rely on'} our legitimate interest in running a secure, working website for server logs and cookieless analytics.</p>
 <h2>Your rights</h2>
 <p>Under the GDPR you can ask to access, correct or delete personal data we hold about you, object to how it is used, or withdraw consent. To do so, contact us as above. You also have the right to complain to the Data Protection Commission in Ireland at <a href="https://www.dataprotection.ie/" target="_blank" rel="noopener">dataprotection.ie</a>.</p>
 <h2>Changes</h2>

@@ -152,7 +152,7 @@ export const TRIPS=[
   'The Geopark Centre keeps irregular hours outside summer.',
   'Pair it with Hook Head using the car ferry between Passage East and Ballyhack.'
  ],
- links:[['Copper Coast Geopark','https://visitwaterford.com/category/explore/copper-coast-unesco-geopark/'],['Passage East ferry','https://www.passageferry.ie/']],
+ links:[['Copper Coast UNESCO Global Geopark','https://coppercoastgeopark.com/'],['Passage East ferry','https://www.passageferry.ie/']],
  maps:{way:['Metal Man, Tramore','Tankardstown Engine House, County Waterford','Bunmahon, County Waterford'],dest:'Dungarvan, County Waterford'},
  alt:'Illustration: sunset over the sea from copper-coloured cliffs, with a ruined mine engine house and chimney on the cliff top and two sea stacks offshore.'},
 
