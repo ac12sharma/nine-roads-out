@@ -5,7 +5,7 @@
 @font-face{font-family:"Newsreader";src:url(../fonts/newsreader-italic-v2.woff2) format("woff2");font-weight:400;font-style:italic;font-display:swap}
 
 :root{
-  --ground:#ECEFE8;--surface:#F7F8F4;--ink:#17211C;--ink-2:#4B5751;--ink-3:#69756E;--line:#CDD4CB;
+  --ground:#ECEFE8;--surface:#F7F8F4;--ink:#17211C;--ink-2:#4B5751;--ink-3:#5C6861;--line:#CDD4CB;
   --accent:#0B6A47;--accent-hover:#08553A;--accent-ink:#FFFFFF;--gorse:#D39A0E;--reach:rgba(211,154,14,.13);
   --sign-green:#00693E;--sign-yellow:#FFD200;--sign-blue:#0059A6;--sign-brown:#6D3A1C;--county:#D3DACF;--county-hover:#BCC7B7;
   --display:"Archivo","Helvetica Neue",Arial,sans-serif;
@@ -146,7 +146,10 @@ h1,h2,h3{text-wrap:balance}
 .row{display:grid;grid-template-columns:3.4em minmax(0,1fr) auto;gap:14px;align-items:start;padding:14px 8px;color:inherit;text-decoration:none;border-top:1px solid var(--line);transition:opacity .25s,background-color .2s}
 .row:hover,.row.is-hot{background:var(--surface)}
 .row.is-hot .row-name{color:var(--accent)}
-.row.is-out{opacity:.4}
+/* Out of range: muted but still readable (WCAG AA), since these rows are still links. */
+.row.is-out .row-name,.row.is-out .row-meta,.row.is-out .row-time,.row.is-out .bear{color:var(--ink-3)}
+.row.is-out .bear{border-color:var(--line)}
+.row.is-out .wheel{opacity:.35}
 .bear{margin-top:2px;padding:6px 0 5px;font:700 12px/1 var(--display);font-stretch:110%;letter-spacing:.04em;text-align:center;border:1.5px solid var(--ink);border-radius:3px}
 .row-name{display:block;font:650 18px/1.25 var(--display);transition:color .2s}
 .row-meta{display:block;margin-top:2px;font-size:15px;line-height:1.4;color:var(--ink-2)}

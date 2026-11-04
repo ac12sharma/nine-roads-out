@@ -120,9 +120,25 @@ let mapView=null;
     else p.manual.push(c);
     writeP(p);
   }
+  /* Keyboard: the map is a single Tab stop (roving tabindex). Arrow keys move to the nearest county
+     in that direction, measured between county centres, so 26 counties don't cost 26 Tab presses.
+     The list of county buttons below the map offers the same choices in alphabetical order. */
+  const centre=el=>{const b=el.getBBox();return[b.x+b.width/2,b.y+b.height/2];};
+  const DIRS={ArrowRight:[1,0],ArrowLeft:[-1,0],ArrowDown:[0,1],ArrowUp:[0,-1]};
+  function neighbour(from,key){
+    const [fx,fy]=centre(from),[dx,dy]=DIRS[key];let best=null,bs=Infinity;
+    paths.forEach(el=>{if(el===from)return;const [x,y]=centre(el),along=(x-fx)*dx+(y-fy)*dy,across=Math.abs((x-fx)*dy-(y-fy)*dx);
+      if(along<=0)return;const s=along+across*2;if(s<bs){bs=s;best=el;}});
+    return best;
+  }
+  function moveTo(el){paths.forEach(p=>p.setAttribute('tabindex',p===el?'0':'-1'));el.focus();}
   paths.forEach(el=>{const c=el.getAttribute('data-county');
-    el.addEventListener('click',()=>toggleCounty(c));
-    el.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();toggleCounty(c);}});});
+    el.addEventListener('click',()=>{toggleCounty(c);paths.forEach(p=>p.setAttribute('tabindex',p===el?'0':'-1'));});
+    el.addEventListener('keydown',e=>{
+      if(e.key==='Enter'||e.key===' '){e.preventDefault();toggleCounty(c);return;}
+      if(DIRS[e.key]){e.preventDefault();const n=neighbour(el,e.key);if(n)moveTo(n);return;}
+      if(e.key==='Home'||e.key==='End'){e.preventDefault();moveTo(paths[e.key==='Home'?0:paths.length-1]);}
+    });});
   chips.forEach(b=>b.addEventListener('click',()=>toggleCounty(b.getAttribute('data-county-chip'))));
   boxes.forEach(b=>b.addEventListener('change',()=>toggleDrive(b.getAttribute('data-drive'),b.getAttribute('data-counties').split('|'),b.checked)));
   const share=$('.lvl-share',root),msg=$('.share-msg',share),url=share.getAttribute('data-url');
@@ -187,7 +203,9 @@ function home(trips){
   function setReach(){
     const v=+input.value;reach.style.r=sc(v)+'px';$('#reach-out').textContent=fmtMins(v);
     let n=0,m=0;
-    trips.forEach(t=>{const out=t.mins>v;if(shown(t)){m++;if(!out)n++;}$$('.row[data-id="'+t.id+'"],.d-trip[data-id="'+t.id+'"]').forEach(e=>e.classList.toggle('is-out',out));});
+    trips.forEach(t=>{const out=t.mins>v;if(shown(t)){m++;if(!out)n++;}$$('.row[data-id="'+t.id+'"],.d-trip[data-id="'+t.id+'"]').forEach(e=>e.classList.toggle('is-out',out));
+      /* The muted style isn't announced, so say it in words for screen readers. */
+      const row=$('.row[data-id="'+t.id+'"]');if(row){let sr=$('.row-out',row);if(!sr){sr=document.createElement('span');sr.className='sr row-out';row.appendChild(sr);}sr.textContent=out?' (further than '+fmtMins(v)+')':'';}});
     $('#reach-count').textContent=n+' of '+m+' drives each way';
   }
   input.addEventListener('input',setReach);setReach();
@@ -235,8 +253,17 @@ function planner(){
   let started=false;const history=[];const ctx={tags:[],max:null,trip:null,last:[],offset:0};
   const START=['The coast','Mountains','History and ruins','Under an hour','Lunch stops','Surprise me'];
 
-  function open(){panel.hidden=false;launch.setAttribute('aria-expanded','true');host.classList.add('is-open');if(!started){started=true;load().then(greet).catch(greet);}setTimeout(()=>input.focus(),60);}
-  function close(){panel.hidden=true;launch.setAttribute('aria-expanded','false');host.classList.remove('is-open');launch.focus();}
+  /* On small screens the panel covers the whole page, so it behaves as a modal dialog: the rest of the
+     page is made inert so Tab can't reach controls hidden behind it. On wider screens it floats beside
+     the page and stays non-modal. Matches the 560px breakpoint in site.css. */
+  const FULL=window.matchMedia?window.matchMedia('(max-width: 560px)'):{matches:false};
+  const setModal=on=>{
+    const modal=on&&FULL.matches;panel.setAttribute('aria-modal',String(modal));
+    $$('body > *').forEach(el=>{if(el!==host&&el.tagName!=='SCRIPT'){if(modal)el.setAttribute('inert','');else el.removeAttribute('inert');}});
+  };
+  if(FULL.addEventListener)FULL.addEventListener('change',()=>setModal(!panel.hidden));
+  function open(){panel.hidden=false;launch.setAttribute('aria-expanded','true');host.classList.add('is-open');setModal(true);if(!started){started=true;load().then(greet).catch(greet);}setTimeout(()=>input.focus(),60);}
+  function close(){panel.hidden=true;launch.setAttribute('aria-expanded','false');host.classList.remove('is-open');setModal(false);launch.focus();}
   launch.addEventListener('click',()=>{if(panel.hidden)open();else close();});
   $('.pl-close',host).addEventListener('click',close);
   panel.addEventListener('keydown',e=>{if(e.key==='Escape')close();});

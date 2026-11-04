@@ -517,16 +517,16 @@ ${config.newsletter && config.newsletter.action ? `<h2>Newsletter</h2>
     const u = urlFor(1), M = irelandMap, names = Object.keys(M.counties);
     const all = new Set(trips.flatMap((t) => t.counties));
     const lvlFor = (n) => (n >= 18 ? 3 : n >= 9 ? 2 : n >= 1 ? 1 : 0);
-    const svg = `<svg class="ie-map" viewBox="0 0 ${M.w} ${M.h}" role="group" aria-label="Map of the 26 counties of the Republic of Ireland. Select a county to mark it as driven.">
+    const svg = `<svg class="ie-map" viewBox="0 0 ${M.w} ${M.h}" role="group" aria-label="Map of the 26 counties of the Republic of Ireland. Select a county to mark it as driven." aria-describedby="ie-keys">
 <path class="ie-ni" d="${M.ni}"/><text class="ie-ni-lab" x="300" y="92" text-anchor="middle">Northern Ireland</text>
-<g class="ie-counties">${names.map((c) => `<path class="ie-c" d="${M.counties[c]}" data-county="${esc(c)}" tabindex="0" role="checkbox" aria-checked="false" aria-label="${esc(c)}"><title>${esc(c)}</title></path>`).join('')}</g>
+<g class="ie-counties">${names.map((c) => `<path class="ie-c" d="${M.counties[c]}" data-county="${esc(c)}" tabindex="${c === 'Dublin' ? 0 : -1}" role="checkbox" aria-checked="false" aria-label="${esc(c)}"><title>${esc(c)}</title></path>`).join('')}</g>
 <circle class="ie-dub" cx="${M.dublin[0]}" cy="${M.dublin[1]}" r="3.5"/><text class="ie-dub-lab" x="${M.dublin[0] + 7}" y="${M.dublin[1] + 4}">Dublin</text>
 </svg>`;
     const body = `<nav class="wrap crumbs" aria-label="Breadcrumb"><ol><li><a href="${u('/')}">Home</a></li><li aria-current="page">Your Ireland</li></ol></nav>
 <section class="wrap ie">
 <header class="prose-head"><h1>How much of Ireland have you driven?</h1><p class="lede">Tick off the drives you've done and tap any other county you've driven in. You'll see how much of the Republic's 26 counties you've covered, and what level of traveller that makes you.</p></header>
 <div class="ie-grid">
-<figure class="ie-fig">${svg}<figcaption><span class="ie-key ie-key-d"></span>From drives you've ticked off <span class="ie-key ie-key-m"></span>Counties you've added. Tap a county to add or remove it. Boundaries from Natural Earth.</figcaption></figure>
+<figure class="ie-fig">${svg}<figcaption><span class="ie-key ie-key-d"></span>From drives you've ticked off <span class="ie-key ie-key-m"></span>Counties you've added. Tap a county to add or remove it. Boundaries from Natural Earth.<span class="sr" id="ie-keys"> On a keyboard, the map is one stop: use the arrow keys to move to the neighbouring county, and Space or Enter to select it.</span></figcaption></figure>
 <div class="ie-side">
 <div class="lvl-card" aria-live="polite">
 <div class="lvl-badge"><span class="lvl-plate" data-lvl-num>0</span><div><p class="lvl-k" data-lvl-k>Your level</p><p class="lvl-name" data-lvl-name>Not on the road yet</p></div></div>
