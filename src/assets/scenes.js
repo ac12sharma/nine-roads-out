@@ -491,5 +491,12 @@ function boot(){
   document.addEventListener('visibilitychange',kick);
   kick();
 }
-if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot);else boot();
+/* The pre-rendered still is the page's main image, so the live canvas waits until the page has loaded
+   and the browser is idle. Painting a scene is a long task on a phone; doing it earlier delays the still
+   image and input. Visitors who ask to save data keep the still. */
+function later(){
+  const c=navigator.connection;if(c&&c.saveData)return;
+  if('requestIdleCallback' in window)requestIdleCallback(boot,{timeout:3000});else setTimeout(boot,200);
+}
+if(document.readyState==='complete')later();else window.addEventListener('load',later,{once:true});
 })();

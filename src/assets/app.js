@@ -221,7 +221,7 @@ function home(trips){
 function planner(){
   const host=$('#planner');if(!host)return;
   const ROOT=host.getAttribute('data-root')||'/',IDX=host.getAttribute('data-index')||'',AI=host.getAttribute('data-ai')||'',PAGE_TRIP=host.getAttribute('data-trip')||'';
-  const urlOf=s=>ROOT+s+'/'+IDX,img=id=>ROOT+'images/scenes/'+id+'-card.webp',guide=a=>ROOT+'driving-guide/'+IDX+(a?'#'+a:''),mapUrl=ROOT+'how-much-of-ireland/'+IDX,hireUrl=ROOT+'car-hire-dublin/'+IDX,noCarUrl=ROOT+'day-trips-from-dublin-without-a-car/'+IDX;
+  const urlOf=s=>ROOT+s+'/'+IDX,img=id=>ROOT+'images/scenes/'+id+'-card-sm.webp',guide=a=>ROOT+'driving-guide/'+IDX+(a?'#'+a:''),mapUrl=ROOT+'how-much-of-ireland/'+IDX,hireUrl=ROOT+'car-hire-dublin/'+IDX,noCarUrl=ROOT+'day-trips-from-dublin-without-a-car/'+IDX;
   let D=null,loading=null;
   const load=()=>D?Promise.resolve(D):(loading||(loading=fetch(host.getAttribute('data-src')).then(r=>{if(!r.ok)throw new Error('load');return r.json();}).then(d=>(D=d)).catch(e=>{loading=null;throw e;})));
   host.innerHTML='<button type="button" class="pl-launch" aria-expanded="false" aria-controls="pl-panel">Plan a trip</button>'+

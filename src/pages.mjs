@@ -94,9 +94,9 @@ export function createRenderer({ config, trips, assets, preview, restaurants, ir
 <link rel="icon" href="${u('/favicon.svg')}" type="image/svg+xml">
 <link rel="apple-touch-icon" href="${u('/apple-touch-icon.png')}">
 <link rel="manifest" href="${u('/site.webmanifest')}">
-<link rel="preload" href="${u('/fonts/archivo.woff2')}" as="font" type="font/woff2" crossorigin>
-<link rel="preload" href="${u('/fonts/newsreader.woff2')}" as="font" type="font/woff2" crossorigin>
 ${preload}
+<link rel="preload" href="${u('/fonts/archivo-v2.woff2')}" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="${u('/fonts/newsreader-v2.woff2')}" as="font" type="font/woff2" crossorigin>
 <link rel="stylesheet" href="${u(assets.css)}">
 ${adsHead}
 ${analytics}
@@ -125,9 +125,13 @@ ${doc}
   }
 
   /* ---------- shared pieces ---------- */
+  // Scene card image with a 640px version for phones. `sizes` is the width the image is shown at.
+  const CARD_SIZES = { card: '(max-width: 640px) calc(100vw - 32px), (max-width: 1000px) 46vw, 360px', hub: '(max-width: 900px) 46vw, 280px', wide: '(max-width: 640px) calc(100vw - 32px), 420px' };
+  const cardImg = (id, u, sizes, eager = false) => `<img src="${u('/images/scenes/' + id + '-card.webp')}" srcset="${u('/images/scenes/' + id + '-card-sm.webp')} 640w, ${u('/images/scenes/' + id + '-card.webp')} 960w" sizes="${CARD_SIZES[sizes]}" width="960" height="640" alt="" loading="${eager ? 'eager' : 'lazy'}" decoding="async">`;
+
   function card(t, u, eager = false) {
     return `<li class="card" data-id="${t.id}"><a class="card-a" href="${u(tripPath(t))}">
-<span class="card-img"><img src="${u('/images/scenes/' + t.id + '-card.webp')}" width="960" height="640" alt="" loading="${eager ? 'eager' : 'lazy'}" decoding="async"></span>
+<span class="card-img">${cardImg(t.id, u, 'card', eager)}</span>
 <span class="card-ga" lang="ga">${esc(t.ga)}</span>
 <span class="card-en">${esc(t.en)}</span>
 <span class="card-meta"><span class="card-time">${fmtMins(t.mins)}</span><span class="card-dir" title="Heading from Dublin">${t.wind}</span><span class="card-wheel">about ${fmtMins(t.drive * 60)} at the wheel</span></span>
@@ -215,12 +219,12 @@ ${r.featured ? '<p class="eat-feat">Featured partner</p>' : ''}<div class="eat-t
 <div class="sec-head"><h2>The nine drives</h2><p class="sub">Sorted by drive time from Dublin city centre. Every one loops back to the city in a day.</p>
 <div class="filters" id="filters" role="group" aria-label="Filter by scenery">${FILTERS.map(([k, l]) => `<button type="button" class="chip" data-f="${k}" aria-pressed="${k === 'all'}">${l} <span class="n">${counts[k]}</span></button>`).join('')}</div>
 <p class="filter-note" id="filter-note" aria-live="polite"></p></div>
-<ul class="cards" id="cards">${trips.map((t, i) => card(t, u, i < 3)).join('')}</ul>
+<ul class="cards" id="cards">${trips.map((t) => card(t, u)).join('')}</ul>
 </section>
 
 <section class="wrap hubs" aria-labelledby="hubs-h">
 <div class="sec-head"><h2 id="hubs-h">Find your kind of drive</h2></div>
-<ul class="hub-list">${THEMES.map((th) => `<li><a class="hub" href="${u('/' + th.slug + '/')}"><span class="hub-img"><img src="${u('/images/scenes/' + th.og + '-card.webp')}" width="960" height="640" alt="" loading="lazy" decoding="async"></span><span class="hub-t"><span class="hub-n">${esc(th.nav)}</span><span class="hub-m">${trips.filter(th.pick).length} drives</span></span></a></li>`).join('')}</ul>
+<ul class="hub-list">${THEMES.map((th) => `<li><a class="hub" href="${u('/' + th.slug + '/')}"><span class="hub-img">${cardImg(th.og, u, 'hub')}</span><span class="hub-t"><span class="hub-n">${esc(th.nav)}</span><span class="hub-m">${trips.filter(th.pick).length} drives</span></span></a></li>`).join('')}</ul>
 <p class="hub-more">No car? <a href="${u('/day-trips-from-dublin-without-a-car/')}">Here’s which drives work by bus or tour</a>. Hiring one? <a href="${u('/car-hire-dublin/')}">Read this first</a>.</p>
 </section>
 
@@ -262,7 +266,7 @@ ${daylightBlock()}
       path: '/', depth: 0, onHome: true, fragment,
       title: preview ? config.name : `${config.name}: the most beautiful day drives from Dublin`,
       desc: 'Nine of the most beautiful day trips by car from Dublin city: Glendalough, Newgrange, Carlingford, the Copper Coast, Hook Head and more, with routes, road numbers and tips.',
-      preload: `<link rel="preload" as="image" href="${u('/images/scenes/hero-wide.webp')}" media="(min-width: 641px)"><link rel="preload" as="image" href="${u('/images/scenes/hero-tall.webp')}" media="(max-width: 640px)">`,
+      preload: `<link rel="preload" as="image" fetchpriority="high" href="${u('/images/scenes/hero-wide.webp')}" media="(min-width: 641px)"><link rel="preload" as="image" fetchpriority="high" href="${u('/images/scenes/hero-tall.webp')}" media="(max-width: 640px)">`,
       jsonld: [
         { '@context': 'https://schema.org', '@type': 'WebSite', name: config.name, url: abs('/'), inLanguage: 'en-IE' },
         { '@context': 'https://schema.org', '@type': 'ItemList', name: 'Day drives from Dublin', itemListElement: trips.map((t, i) => ({ '@type': 'ListItem', position: i + 1, url: abs(tripPath(t)), name: t.en })) },
@@ -329,7 +333,7 @@ ${adSlot('footer', 'wrap')}
       path, depth: 1, ogType: 'article', ogImage: `/og/${t.id}.jpg`, tripId: t.id,
       title: `${t.en} day trip from Dublin: ${t.via.replace(/^And /, 'and ')} | ${config.name}`,
       desc: t.desc,
-      preload: `<link rel="preload" as="image" href="${u('/images/scenes/' + t.id + '-plate.webp')}" media="(min-width: 641px)"><link rel="preload" as="image" href="${u('/images/scenes/' + t.id + '-plate-sm.webp')}" media="(max-width: 640px)">`,
+      preload: `<link rel="preload" as="image" fetchpriority="high" href="${u('/images/scenes/' + t.id + '-plate.webp')}" media="(min-width: 641px)"><link rel="preload" as="image" fetchpriority="high" href="${u('/images/scenes/' + t.id + '-plate-sm.webp')}" media="(max-width: 640px)">`,
       jsonld: [
         {
           '@context': 'https://schema.org', '@type': 'TouristTrip', name: `${t.en}: ${t.via}`, description: t.desc, url: abs(path), image: abs(`/og/${t.id}.jpg`),
@@ -571,7 +575,7 @@ ${list.map((t) => `<tr><th scope="row"><a href="${u(tripPath(t))}">${esc(t.en)}<
 </tbody></table></div>
 ${th.daylight ? `<div class="th-daylight">${daylightBlock()}</div>` : ''}
 <ol class="th-list">${list.map((t) => `<li class="th-item">
-<a class="th-img" href="${u(tripPath(t))}" tabindex="-1" aria-hidden="true"><img src="${u('/images/scenes/' + t.id + '-card.webp')}" width="960" height="640" alt="" loading="lazy" decoding="async"></a>
+<a class="th-img" href="${u(tripPath(t))}" tabindex="-1" aria-hidden="true">${cardImg(t.id, u, 'wide')}</a>
 <div class="th-body"><p class="th-ga" lang="ga">${esc(t.ga)}</p><h2><a href="${u(tripPath(t))}">${esc(t.en)}</a></h2>
 <p class="th-meta">${fmtMins(t.mins)} from Dublin · about ${fmtMins(t.drive * 60)} at the wheel · ${countyLabel(t.county)}</p>
 <p>${esc(th.angle[t.id] || t.lede)}</p>
@@ -580,7 +584,7 @@ ${th.daylight ? `<div class="th-daylight">${daylightBlock()}</div>` : ''}
 ${adSlot('guide')}
 <section class="th-tips"><h2 class="sec-h">Before you go</h2><ul class="tips">${th.tips.map(([h, p]) => `<li><h3>${esc(h)}</h3><p>${esc(p)}</p></li>`).join('')}</ul>
 <p class="more-link"><a href="${u('/driving-guide/')}">Read the full driving guide</a> for tolls, speed limits, road signs and daylight by month.</p></section>
-<nav class="th-more" aria-label="Other kinds of drive"><h2 class="sec-h">Other kinds of drive</h2><ul class="hub-list">${others.map((x) => `<li><a class="hub" href="${u('/' + x.slug + '/')}"><span class="hub-img"><img src="${u('/images/scenes/' + x.og + '-card.webp')}" width="960" height="640" alt="" loading="lazy" decoding="async"></span><span class="hub-t"><span class="hub-n">${esc(x.nav)}</span><span class="hub-m">${trips.filter(x.pick).length} drives</span></span></a></li>`).join('')}<li><a class="hub hub-plain" href="${u('/#drives')}"><span class="hub-t"><span class="hub-n">All nine drives</span><span class="hub-m">Sorted by drive time</span></span></a></li></ul></nav>
+<nav class="th-more" aria-label="Other kinds of drive"><h2 class="sec-h">Other kinds of drive</h2><ul class="hub-list">${others.map((x) => `<li><a class="hub" href="${u('/' + x.slug + '/')}"><span class="hub-img">${cardImg(x.og, u, 'hub')}</span><span class="hub-t"><span class="hub-n">${esc(x.nav)}</span><span class="hub-m">${trips.filter(x.pick).length} drives</span></span></a></li>`).join('')}<li><a class="hub hub-plain" href="${u('/#drives')}"><span class="hub-t"><span class="hub-n">All nine drives</span><span class="hub-m">Sorted by drive time</span></span></a></li></ul></nav>
 ${newsletter('theme', u)}
 </article>`;
     return layout({
