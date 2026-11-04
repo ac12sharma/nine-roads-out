@@ -284,6 +284,7 @@ function planner(){
   const card=t=>'<a class="pl-card" href="'+urlOf(t.slug)+'"><img src="'+img(t.id)+'" alt="" width="96" height="64" loading="lazy"><span><span class="pl-card-n">'+escH(t.en)+'</span><span class="pl-card-m">'+fmtMins(t.mins)+' '+t.wind+', about '+fmtMins(t.drive*60)+' at the wheel</span></span></a>';
   const eatRow=(r,t)=>'<div class="pl-eat"><span class="pl-eat-n">'+escH(r.name)+'</span><span class="pl-eat-m">'+(r.featured?'Featured · ':'')+escH(r.type)+' in '+escH(r.town)+(t?', on the '+escH(t.en)+' drive':'')+'</span><a href="'+escH(r.map)+'" target="_blank" rel="noopener">Map</a></div>';
   const TAGNAME={coast:'the coast',mountains:'mountains',heritage:'history and ruins'};
+  const TAGADJ={coast:'coastal',mountains:'mountain',heritage:'heritage'};
   const TYPEPL={'Café':'cafés','Pub':'pubs','Restaurant':'restaurants','Fine dining':'fine dining'};
 
   function greet(){
@@ -385,21 +386,27 @@ function planner(){
     bot('<strong>'+escH(t.en)+'</strong>. '+escH(t.blurb||t.desc)+' Best time: '+escH(t.best.charAt(0).toLowerCase()+t.best.slice(1))+'.',card(t)+chips([n?'Where to eat on this drive':null,'Something similar','Something shorter']));
   }
   function food(it){
-    const trips=it.trip?[it.trip]:ctx.trip?[ctx.trip]:null;
+    /* Which drives to search. A named drive wins. Otherwise scenery or a time limit in the question
+       ("seafood near the coast") means every drive that matches, not just the one on screen. Only a
+       bare food question ("lunch?") falls back to the drive being discussed. */
+    const scoped=D.trips.filter(t=>(!it.tags.length||it.tags.some(g=>t.tags.indexOf(g)>-1))&&(it.max==null||t.mins<=it.max+5));
+    const trips=it.trip?[it.trip]:(it.tags.length||it.max!=null)?scoped:ctx.trip?[ctx.trip]:null;
+    const many=!!trips&&trips.length>1;
     let pre='';
     if(it.diet)pre='The listings here don\'t include dietary details I can check, but most Irish cafés and restaurants can cater for vegetarian, vegan and coeliac diets if you ask ahead. Ring before you go to be sure. ';
     let rows=[];(trips||D.trips).forEach(t=>(D.eat[t.id]||[]).forEach(r=>rows.push([r,t])));
     if(it.type)rows=rows.filter(x=>x[0].type===it.type);
     if(it.cuisine)rows=rows.filter(x=>x[0].cuisine.indexOf(it.cuisine)>-1);
-    const where=trips?'on the '+escH(trips[0].en)+' drive':'across the nine drives';
+    const one=trips&&trips.length===1?trips[0]:null;
+    const where=one?'on the '+escH(one.en)+' drive':trips?'on the '+(it.tags.length?it.tags.map(g=>TAGADJ[g]).join(' and ')+' ':'')+'drives'+(it.max!=null?' within '+fmtMins(it.max)+' of Dublin':''):'across the nine drives';
     const what=(it.cuisine?it.cuisine.toLowerCase()+' ':'')+(it.type?TYPEPL[it.type]:'places to eat');
     if(!rows.length){
-      const avail=trips?[...new Set((D.eat[trips[0].id]||[]).map(r=>r.type))]:[];
+      const avail=one?[...new Set((D.eat[one.id]||[]).map(r=>r.type))]:[];
       bot(pre+'I don\'t have any '+escH(what)+' listed '+where+'.',chips(avail.length?avail.map(ty=>TYPEPL[ty].charAt(0).toUpperCase()+TYPEPL[ty].slice(1)+' on this drive'):['Seafood','Cafés','Fine dining']));return;
     }
     if(it.trip)ctx.trip=it.trip;
-    const more=trips?['Cafés','Pubs','Restaurants','Fine dining'].filter(l=>(D.eat[trips[0].id]||[]).some(r=>TYPEPL[r.type]===l.toLowerCase())&&(!it.type||TYPEPL[it.type]!==l.toLowerCase())).map(l=>l+' on this drive'):D.trips.slice(0,3).map(t=>'Lunch near '+t.en);
-    bot(pre+escH(what.charAt(0).toUpperCase()+what.slice(1))+' '+where+':',rows.slice(0,6).map(x=>eatRow(x[0],trips?null:x[1])).join('')+(rows.length>6?'<p class="pl-more">And '+(rows.length-6)+' more. Tell me which drive to narrow it down.</p>':'')+'<p class="pl-more">Opening hours change, so check before you go.</p>'+chips(more));
+    const more=one?['Cafés','Pubs','Restaurants','Fine dining'].filter(l=>(D.eat[one.id]||[]).some(r=>TYPEPL[r.type]===l.toLowerCase())&&(!it.type||TYPEPL[it.type]!==l.toLowerCase())).map(l=>l+' on this drive'):(many?trips:D.trips).slice(0,3).map(t=>'Lunch near '+t.en);
+    bot(pre+escH(what.charAt(0).toUpperCase()+what.slice(1))+' '+where+':',rows.slice(0,6).map(x=>eatRow(x[0],one?null:x[1])).join('')+(rows.length>6?'<p class="pl-more">And '+(rows.length-6)+' more. Tell me which drive to narrow it down.</p>':'')+'<p class="pl-more">Opening hours change, so check before you go.</p>'+chips(more));
   }
   function topic(k){
     if(k==='tolls')bot('The M50 toll around Dublin is barrier-free: pay online at eflow.ie by 8pm the next day. The M1, M3 and M7/M8 have toll plazas you pay as you pass.'+link(guide('tolls'),'More on tolls'),chips(['Speed limits','Under an hour']));
