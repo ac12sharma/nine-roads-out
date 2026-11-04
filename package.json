@@ -13,7 +13,8 @@
     "images": "node scripts/render-images.mjs",
     "serve": "npm run build && node scripts/serve.mjs dist",
     "audit": "node scripts/audit-pages.mjs",
-    "check-links": "node scripts/check-links.mjs"
+    "check-links": "node scripts/check-links.mjs",
+    "lighthouse": "node scripts/lighthouse.mjs"
   },
   "devDependencies": {
     "axe-core": "^4.14.0",

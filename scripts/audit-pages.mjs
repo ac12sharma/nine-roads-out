@@ -104,7 +104,36 @@ for (const vp of WIDTHS) {
   const issues = [];
   if (afterOpen !== 'pl-input') issues.push({ kind: 'planner-focus-open', detail: afterOpen });
   if (afterClose !== 'pl-launch') issues.push({ kind: 'planner-focus-close', detail: afterClose });
+  // On phones the planner covers the page, so Tab must stay inside it.
+  if (vp.width <= 560) {
+    await page.click('.pl-launch');
+    await page.waitForTimeout(200);
+    for (let i = 0; i < 15; i++) {
+      await page.keyboard.press('Tab');
+      const inside = await page.evaluate(() => !!document.activeElement?.closest('#planner') || document.activeElement === document.body);
+      if (!inside) { issues.push({ kind: 'planner-focus-escapes', detail: await page.evaluate(() => document.activeElement?.outerHTML.slice(0, 80)) }); break; }
+    }
+    await page.keyboard.press('Escape');
+  }
   report.push({ page: '/ (planner)', viewport: vp.name, issues });
+  await page.close();
+}
+
+// County map: one Tab stop, arrow keys move between counties, Space selects.
+{
+  const page = await browser.newPage({ viewport: { width: 1280, height: 800 } });
+  await page.goto(BASE + '/how-much-of-ireland/', { waitUntil: 'networkidle' });
+  const issues = [];
+  const stops = await page.evaluate(() => document.querySelectorAll('.ie-c[tabindex="0"]').length);
+  if (stops !== 1) issues.push({ kind: 'map-tab-stops', detail: stops });
+  await page.focus('.ie-c[tabindex="0"]');
+  const start = await page.evaluate(() => document.activeElement?.getAttribute('data-county'));
+  await page.keyboard.press('ArrowLeft');
+  const moved = await page.evaluate(() => document.activeElement?.getAttribute('data-county'));
+  if (!moved || moved === start) issues.push({ kind: 'map-arrow-keys', detail: `${start} -> ${moved}` });
+  await page.keyboard.press(' ');
+  if (await page.evaluate(() => document.activeElement?.getAttribute('aria-checked')) !== 'true') issues.push({ kind: 'map-select', detail: moved });
+  report.push({ page: '/how-much-of-ireland/ (map keyboard)', viewport: 'desktop', issues });
   await page.close();
 }
 
