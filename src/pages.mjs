@@ -490,7 +490,7 @@ ${adsOn ? `<p>This site shows ads served by Google AdSense. If you are in the Eu
 <h2>Legal basis</h2>
 <p>${[adsOn && 'advertising cookies', newsOn && 'the newsletter'].filter(Boolean).length ? `We rely on your consent for ${[adsOn && 'advertising cookies', newsOn && 'the newsletter'].filter(Boolean).join(' and ')}, and on` : 'We rely on'} our legitimate interest in running a secure, working website for server logs and cookieless analytics.</p>
 <h2>Your rights</h2>
-<p>Under the GDPR you can ask to access, correct or delete personal data we hold about you, object to how it is used, or withdraw consent. To do so, contact us as above. You also have the right to complain to the Data Protection Commission in Ireland at <a href="https://www.dataprotection.ie/" target="_blank" rel="noopener">dataprotection.ie</a>.</p>
+<p>Under the GDPR you can ask to access, correct or delete personal data we hold about you, object to how it is used, or withdraw consent. To do so, contact us as above. You also have the right to complain to the Data Protection Commission in Ireland at <a href="https://www.dataprotection.ie/en" target="_blank" rel="noopener">dataprotection.ie</a>.</p>
 <h2>Changes</h2>
 <p>If this policy changes, the new version will be posted here with a new date.</p>`,
     });
