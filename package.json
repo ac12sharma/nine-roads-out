@@ -14,7 +14,8 @@
     "serve": "npm run build && node scripts/serve.mjs dist",
     "audit": "node scripts/audit-pages.mjs",
     "check-links": "node scripts/check-links.mjs",
-    "lighthouse": "node scripts/lighthouse.mjs"
+    "lighthouse": "node scripts/lighthouse.mjs",
+    "test": "node --test tests/*.test.mjs"
   },
   "devDependencies": {
     "axe-core": "^4.14.0",
