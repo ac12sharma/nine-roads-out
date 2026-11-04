@@ -4,6 +4,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import crypto from 'node:crypto';
+import { execFileSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import config from '../site.config.mjs';
 import { TRIPS } from './content/trips.mjs';
@@ -100,8 +101,27 @@ write('404.html', r.notFound());
 
 // 5. Search, ads and hosting files.
 const urls = ['/', ...trips.map((t) => `/${t.slug}/`), ...THEMES.map((th) => `/${th.slug}/`), '/car-hire-dublin/', '/day-trips-from-dublin-without-a-car/', '/how-much-of-ireland/', '/driving-guide/', '/about/', '/advertise/', '/contact/', '/privacy/', '/terms/'];
-const today = new Date().toISOString().slice(0, 10);
-write('sitemap.xml', `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${urls.map((u) => `  <url><loc>${config.siteUrl}${u}</loc><lastmod>${today}</lastmod></url>`).join('\n')}\n</urlset>\n`);
+// lastmod is the date of the last commit that changed the content behind each page, so search engines
+// only see a new date when something they'd care about changed. Uncommitted edits count as today.
+// Without git history (a shallow clone, or no .git) it is left out rather than guessed.
+const SOURCES = {
+  '/': ['src/content/trips.mjs', 'src/content/guides.mjs'],
+  trip: ['src/content/trips.mjs', 'src/content/restaurants.mjs', 'src/content/photos.mjs'],
+  theme: ['src/content/guides.mjs', 'src/content/trips.mjs'],
+  '/day-trips-from-dublin-without-a-car/': ['src/content/guides.mjs', 'src/content/trips.mjs', 'src/pages.mjs'],
+  '/how-much-of-ireland/': ['src/content/trips.mjs', 'src/content/ireland-map.json'],
+};
+function lastChanged(files) {
+  try {
+    const git = (...a) => execFileSync('git', a, { cwd: root, encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] }).trim();
+    if (git('rev-parse', '--is-shallow-repository') !== 'false') return '';
+    if (git('status', '--porcelain', '--', ...files)) return new Date().toISOString().slice(0, 10);
+    return git('log', '-1', '--format=%cs', '--', ...files);
+  } catch { return ''; }
+}
+const sourcesFor = (u) => SOURCES[u] || (trips.some((t) => u === `/${t.slug}/`) ? SOURCES.trip : THEMES.some((th) => u === `/${th.slug}/`) ? SOURCES.theme : ['src/pages.mjs']);
+const lastmod = (u) => { const d = lastChanged(sourcesFor(u)); return d ? `<lastmod>${d}</lastmod>` : ''; };
+write('sitemap.xml', `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${urls.map((u) => `  <url><loc>${config.siteUrl}${u}</loc>${lastmod(u)}</url>`).join('\n')}\n</urlset>\n`);
 write('robots.txt', preview ? 'User-agent: *\nDisallow: /\n' : `User-agent: *\nAllow: /\n\nSitemap: ${config.siteUrl}/sitemap.xml\n`);
 if (config.adsense.client) write('ads.txt', `google.com, ${config.adsense.client.replace(/^ca-/, '')}, DIRECT, f08c47fec0942fa0\n`);
 write('site.webmanifest', JSON.stringify({ name: config.name, short_name: config.name, start_url: '/', display: 'browser', background_color: '#ECEFE8', theme_color: '#0B6A47', icons: [{ src: '/icon-192.png', sizes: '192x192', type: 'image/png' }, { src: '/icon-512.png', sizes: '512x512', type: 'image/png' }] }, null, 2));
