@@ -16,11 +16,15 @@
     "check-links": "node scripts/check-links.mjs",
     "lighthouse": "node scripts/lighthouse.mjs",
     "test": "node --test tests/*.test.mjs",
-    "typecheck": "tsc -p . && tsc -p tsconfig.strict.json"
+    "typecheck": "tsc -p . && tsc -p tsconfig.strict.json",
+    "validate-html": "html-validate \"dist/**/*.html\"",
+    "page-weight": "node scripts/page-weight.mjs",
+    "eval": "node --test tests/planner-eval.test.mjs"
   },
   "devDependencies": {
     "@types/node": "^24.10.1",
     "axe-core": "^4.14.0",
+    "html-validate": "^11.17.0",
     "playwright": "^1.48.0",
     "typescript": "^5.9.3"
   }
