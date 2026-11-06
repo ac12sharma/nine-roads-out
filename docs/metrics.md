@@ -160,6 +160,6 @@ The broken link was the Copper Coast Geopark page on visitwaterford.com (404). I
 
 ## Still to measure
 
-- The CI workflow on GitHub's runners: it has only been run locally so far, because nothing is pushed yet.
+- The CI workflow on GitHub's runners. Its steps have been run locally, but the workflow itself hasn't run because nothing is pushed yet.
 - Lighthouse on the live site after deployment, with Cloudflare's own compression and caching.
 - Real-user Core Web Vitals and traffic: to measure after launch.
