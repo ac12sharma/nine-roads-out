@@ -22,7 +22,7 @@ const env = {
 
 /**
  * Asks one case's question (after any earlier questions) and lists what's wrong with the answer.
- * @param {typeof CASES[number] & { eats?: string[], eatType?: string, eatOn?: string[], says?: string, cards?: string[], first?: string, tag?: string, page?: string, before?: string[] }} c
+ * @param {import('./planner-cases.mjs').Case} c
  */
 export function evaluate(c) {
   const ctx = newContext();
@@ -43,7 +43,7 @@ export function evaluate(c) {
   return { case: c, reply: r, problems };
 }
 
-/** @param {import('node:test').TestContext} t @param {string} name @param {typeof CASES} cases */
+/** @param {import('node:test').TestContext} t @param {string} name @param {import('./planner-cases.mjs').Case[]} cases */
 function score(t, name, cases) {
   const results = cases.map(evaluate);
   const wrong = results.filter((x) => x.problems.length);

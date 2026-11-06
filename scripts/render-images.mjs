@@ -39,7 +39,7 @@ await page.evaluate(() => document.fonts.ready);
 
 async function still(scene, w, h, file, q = 0.78) {
   if (only && !file.includes(only)) return;
-  const b64 = await page.evaluate(([s, W, H, Q]) => {
+  const b64 = await page.evaluate((/** @type {[string, number, number, number]} */ [s, W, H, Q]) => {
     const c = document.createElement('canvas');
     window.NRO_SCENES.renderStill(c, s, W, H, 1, 0);
     return c.toDataURL('image/webp', Q).split(',')[1];
@@ -92,7 +92,7 @@ for (const t of TRIPS) {
   await page.locator('.og').screenshot({ path: path.join(pub, 'og', 'ireland.jpg'), type: 'jpeg', quality: 88 });
 }
 
-for (const [size, file] of [[180, 'apple-touch-icon.png'], [192, 'icon-192.png'], [512, 'icon-512.png']]) {
+for (const [size, file] of /** @type {[number, string][]} */ ([[180, 'apple-touch-icon.png'], [192, 'icon-192.png'], [512, 'icon-512.png']])) {
   await page.setViewportSize({ width: size, height: size });
   await page.evaluate((s) => {
     document.querySelectorAll('.og,.icon').forEach((n) => n.remove());

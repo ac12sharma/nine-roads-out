@@ -183,7 +183,7 @@ ${r.featured ? '<p class="eat-feat">Featured partner</p>' : ''}<div class="eat-t
 
   function daylightBlock() {
     const s = sunTimes(new Date());
-    const dh = (s.set - s.rise) / 36e5;
+    const dh = (s.set.getTime() - s.rise.getTime()) / 36e5;
     return `<div class="daylight" aria-live="polite">
 <p class="dl-label">Today in Dublin, <span id="dl-date">${new Date().toLocaleDateString('en-IE', { weekday: 'long', day: 'numeric', month: 'long', timeZone: 'Europe/Dublin' })}</span></p>
 <div class="dl-times"><div><span class="dl-t" id="dl-rise">${fmtClock(s.rise)}</span><span class="dl-k">Sunrise</span></div><span class="dl-arrow" aria-hidden="true">→</span><div><span class="dl-t" id="dl-set">${fmtClock(s.set)}</span><span class="dl-k">Sunset</span></div></div>
@@ -360,7 +360,7 @@ ${adSlot('footer', 'wrap')}
     const rows = Array.from({ length: 12 }, (_, m) => {
       const d = new Date(Date.UTC(y, m, 15, 12));
       const s = sunTimes(d);
-      return `<tr><th scope="row">${d.toLocaleDateString('en-IE', { month: 'long', timeZone: 'UTC' })}</th><td>${fmtClock(s.rise)}</td><td>${fmtClock(s.set)}</td><td>${fmtMins((s.set - s.rise) / 6e4)}</td></tr>`;
+      return `<tr><th scope="row">${d.toLocaleDateString('en-IE', { month: 'long', timeZone: 'UTC' })}</th><td>${fmtClock(s.rise)}</td><td>${fmtClock(s.set)}</td><td>${fmtMins((s.set.getTime() - s.rise.getTime()) / 6e4)}</td></tr>`;
     }).join('');
     return prosePage({
       path: '/driving-guide/', active: 'guide',

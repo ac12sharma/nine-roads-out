@@ -1,4 +1,36 @@
-export const TRIPS=[
+/**
+ * One drive. `slug`, `tags`, `counties`, `words` and the fields in EXTRA are filled in at the end of
+ * this file.
+ * @typedef {object} Drive
+ * @property {string} id
+ * @property {string} scene illustration used for the drive's images
+ * @property {string} ga Irish name
+ * @property {string} en English name
+ * @property {string} via
+ * @property {string} county
+ * @property {string} sig the signature sight
+ * @property {number} lat
+ * @property {number} lon
+ * @property {number} mins minutes from Dublin to the first stop
+ * @property {number} km round trip
+ * @property {number} drive hours at the wheel for the round trip
+ * @property {string} best
+ * @property {string} lede
+ * @property {{ road: string, n: string, t: string, home?: boolean }[]} stops the last one is the way home
+ * @property {string[]} know
+ * @property {[string, string][]} links label and official URL
+ * @property {{ way: string[], dest: string }} maps
+ * @property {string} alt
+ * @property {string} desc
+ * @property {string} stay
+ * @property {string} stayLabel
+ * @property {string | null} tour
+ * @property {string} slug
+ * @property {string[]} tags
+ * @property {string[]} counties
+ * @property {string[]} words
+ */
+export const TRIPS=/** @type {Drive[]} */ ([
 {id:'glendalough',scene:'glendalough',ga:'Gleann Dá Loch',en:'Glendalough',via:'By the Sally Gap and the Military Road',county:'Wicklow',
  sig:'Lough Tay',lat:53.106,lon:-6.258,mins:50,km:140,drive:3.25,best:'Early, on a clear weekday',
  lede:'The nearest escape from the city is also the wildest. The Military Road climbs from Rathfarnham onto open blanket bog, passes the black water of Lough Tay and drops into the valley where St Kevin built his monastery between two lakes.',
@@ -175,10 +207,11 @@ export const TRIPS=[
  links:[['Hook Lighthouse','https://hookheritage.ie/'],['Passage East ferry','https://www.passageferry.ie/']],
  maps:{way:['Tintern Abbey, County Wexford','Fethard-on-Sea, County Wexford','Hook Lighthouse, County Wexford'],dest:'Duncannon Fort, County Wexford'},
  alt:'Illustration: blue hour at Hook Head, with the black-and-white banded lighthouse sweeping its beam over a dark sea under the first stars.'}
-];
+]);
 
 /* SEO descriptions, booking-search places and tour searches for each drive.
    stay = where the "Stay nearby" link searches; tour = guided-tour search, or null where tours from Dublin are rare. */
+/** @type {Record<string, { desc: string, stay: string, stayLabel: string, tour: string | null }>} */
 const EXTRA={
   glendalough:{desc:'Drive from Dublin over the Sally Gap and Military Road to Lough Tay and Glendalough. Stops, road numbers, parking tips and a ready Google Maps route.',stay:'Laragh, County Wicklow',stayLabel:'Laragh',tour:'Glendalough day trip from Dublin'},
   boyne:{desc:'Newgrange, Knowth, Monasterboice, Slane and Tara in one day from Dublin. The route, Brú na Bóinne booking tips and a ready Google Maps route.',stay:'Slane, County Meath',stayLabel:'Slane',tour:'Newgrange tour from Dublin'},
@@ -190,9 +223,11 @@ const EXTRA={
   copper:{desc:'Drive the Copper Coast UNESCO Geopark from Tramore to Dungarvan: cliffs, coves and mine ruins. The route and tips for a long day from Dublin.',stay:'Dungarvan, County Waterford',stayLabel:'Dungarvan',tour:null},
   hook:{desc:'The Ring of Hook in Wexford: Hook Lighthouse, Tintern Abbey, Baginbun and Duncannon Fort. A day trip by car from Dublin, with the route and tips.',stay:'Fethard-on-Sea, County Wexford',stayLabel:'Fethard-on-Sea',tour:null}
 };
+/** @type {Record<string, string[]>} */
 const TAGS={glendalough:['mountains','heritage'],boyne:['heritage'],cooley:['coast','mountains'],loughcrew:['heritage'],slievebloom:['mountains','heritage'],leinster:['mountains'],cashel:['heritage','mountains'],copper:['coast'],hook:['coast','heritage']};
 /* Counties each round trip drives through from Dublin, including the roads there and back.
    Used by the traveller levels on /how-much-of-ireland/. */
+/** @type {Record<string, string[]>} */
 const COUNTIES={
   glendalough:['Dublin','Wicklow'],
   boyne:['Dublin','Meath','Louth'],
@@ -205,6 +240,7 @@ const COUNTIES={
   hook:['Dublin','Wicklow','Wexford']
 };
 /* Extra words people use for each drive, so the trip planner can match free text. */
+/** @type {Record<string, string[]>} */
 const WORDS={
   glendalough:['glendalough','wicklow','sally gap','lough tay','guinness lake','military road','glenmacnass','laragh','round tower','st kevin','wicklow gap','glencree'],
   boyne:['boyne','newgrange','knowth','slane','tara','meath','monasterboice','bru na boinne','brú na bóinne','passage tomb','solstice','high cross'],

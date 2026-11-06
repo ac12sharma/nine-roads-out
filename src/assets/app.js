@@ -44,7 +44,7 @@ function daylight(trips){
     $('#dl-date').textContent=now.toLocaleDateString('en-IE',{weekday:'long',day:'numeric',month:'long',timeZone:'Europe/Dublin'});
     $('#dl-rise').textContent=fmtClock(s.rise);
     $('#dl-set').textContent=fmtClock(s.set);
-    const dh=(s.set-s.rise)/36e5;$('#dl-len').textContent=fmtMins(dh*60)+' of daylight';
+    const dh=(s.set.getTime()-s.rise.getTime())/36e5;$('#dl-len').textContent=fmtMins(dh*60)+' of daylight';
     if(trips){
       const miss=trips.filter(t=>t.drive+3>dh),fit=trips.length-miss.length;
       $('#dl-advice').textContent=miss.length===0
@@ -165,7 +165,7 @@ function home(trips){
   const reach=el('circle',{cx:CX,cy:CY,r:sc(105),class:'d-reach'});
   [60,90,120,150].forEach(m=>{el('circle',{cx:CX,cy:CY,r:sc(m),class:'d-ring'+(m===150?' outer':'')});el('text',{x:CX+sc(m)-5,y:CY-6,'text-anchor':'end',class:'d-ringlab'}).textContent=fmtMins(m);});
   for(let i=0;i<16;i++){const a=i*22.5*RAD,r2=R+(i%4===0?9:5);el('line',{x1:CX+R*Math.sin(a),y1:CY-R*Math.cos(a),x2:CX+r2*Math.sin(a),y2:CY-r2*Math.cos(a),class:'d-tick'});}
-  [['N',0,-R-16],['S',0,R+27],['E',R+19,5],['W',-R-19,5]].forEach(c=>{el('text',{x:CX+c[1],y:CY+c[2],'text-anchor':'middle',class:'d-compass'}).textContent=c[0];});
+  /** @type {[string,number,number][]} */([['N',0,-R-16],['S',0,R+27],['E',R+19,5],['W',-R-19,5]]).forEach(c=>{el('text',{x:CX+c[1],y:CY+c[2],'text-anchor':'middle',class:'d-compass'}).textContent=c[0];});
   el('text',{x:CX+162*Math.sin(112*RAD),y:CY-162*Math.cos(112*RAD),'text-anchor':'middle',class:'d-sea'}).textContent='Irish Sea';
   const LEFT={loughcrew:1,slievebloom:1,leinster:1,cashel:1,copper:1};
   trips.forEach(t=>{
@@ -235,7 +235,7 @@ function planner(){
   /* On small screens the panel covers the whole page, so it behaves as a modal dialog: the rest of the
      page is made inert so Tab can't reach controls hidden behind it. On wider screens it floats beside
      the page and stays non-modal. Matches the 560px breakpoint in site.css. */
-  const FULL=window.matchMedia?window.matchMedia('(max-width: 560px)'):{matches:false};
+  const FULL=/** @type {MediaQueryList} */(window.matchMedia?window.matchMedia('(max-width: 560px)'):{matches:false});
   const setModal=on=>{
     const modal=on&&FULL.matches;panel.setAttribute('aria-modal',String(modal));
     $$('body > *').forEach(el=>{if(el!==host&&el.tagName!=='SCRIPT'){if(modal)el.setAttribute('inert','');else el.removeAttribute('inert');}});

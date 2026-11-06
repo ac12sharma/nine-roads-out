@@ -19,6 +19,22 @@
 // Drive ids and minutes from Dublin: glendalough 50, boyne 50, cooley (Carlingford) 75, loughcrew 80,
 // slievebloom 80, leinster 100, cashel 105, copper 120, hook 135.
 
+/**
+ * @typedef {object} Case
+ * @property {string} q
+ * @property {string} kind
+ * @property {string} [page]
+ * @property {string[]} [before]
+ * @property {string[]} [cards]
+ * @property {string} [first]
+ * @property {string} [tag]
+ * @property {string[]} [eats]
+ * @property {string} [eatType]
+ * @property {string[]} [eatOn]
+ * @property {string} [says]
+ */
+
+/** @type {Case[]} */
 export const CASES = [
   // Scenery
   { q: 'The coast', kind: 'drives', cards: ['cooley', 'copper', 'hook'] },
@@ -135,6 +151,7 @@ export const CASES = [
 
 // Written after the parser fixes of November 2026. Don't change the parser to pass these: add a new
 // case to CASES instead, and leave this set as it is.
+/** @type {Case[]} */
 export const HOLDOUT = [
   { q: 'somewhere with a lighthouse', kind: 'one', cards: ['hook'] },
   { q: 'day trip to the seaside under 90 mins', kind: 'drives', cards: ['cooley'] },

@@ -5,6 +5,19 @@
 
 export const TYPES = ['Café', 'Pub', 'Restaurant', 'Fine dining'];
 
+/**
+ * @typedef {object} Restaurant
+ * @property {string} name
+ * @property {string} town
+ * @property {string} type one of TYPES
+ * @property {string[]} cuisine
+ * @property {string} near which stop or leg of the drive it is near
+ * @property {string} note
+ * @property {string} [url] the venue's own site; required for a featured listing
+ * @property {boolean} [featured] a paid placement, labelled on the page and linked with rel="sponsored"
+ */
+
+/** @type {Record<string, Restaurant[]>} drive id -> places to eat */
 export const RESTAURANTS = {
   glendalough: [
     { name: 'The Wicklow Heather', town: 'Laragh', type: 'Restaurant', cuisine: ['Irish', 'European'], near: 'Glendalough', note: 'Restaurant in Laragh, a few minutes from the monastic site, with Irish and European cooking.' },
@@ -56,4 +69,5 @@ export const RESTAURANTS = {
   ],
 };
 
+/** @param {{ name: string, town: string }} r */
 export const mapsSearch = (r) => 'https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent(`${r.name}, ${r.town}, Ireland`);
