@@ -58,6 +58,7 @@ import { levelLine } from './levels.mjs';
  * @typedef {object} Intent
  * @property {string[]} tags
  * @property {number | null} max minutes
+ * @property {boolean} [vague] the limit came from a word like "near", not a number
  * @property {boolean} food
  * @property {string | null} type
  * @property {string | null} cuisine
@@ -89,6 +90,10 @@ const TYPEPL = { 'Café': 'cafés', 'Pub': 'pubs', 'Restaurant': 'restaurants', 
 export const newContext = () => ({ tags: [], max: null, trip: null, last: [], offset: 0 });
 
 const link = (/** @type {string} */ href, /** @type {string} */ label) => ' <a href="' + esc(href) + '">' + esc(label) + '</a>';
+/** @type {Record<string, number>} */
+const NUM = { a: 1, an: 1, one: 1, two: 2, three: 3, four: 4, five: 5 };
+/** Cuisines people ask for. Only some appear in the listings; asking for the others gets an honest "none listed". */
+const CUISINES = ['seafood', 'french', 'mediterranean', 'european', 'irish', 'italian', 'pizza', 'indian', 'chinese', 'thai', 'japanese', 'sushi', 'mexican', 'spanish', 'tapas', 'burgers?', 'steak'];
 const cap = (/** @type {string} */ s) => s.charAt(0).toUpperCase() + s.slice(1);
 
 /**
@@ -115,7 +120,10 @@ export function greeting(data, ctx, pageTrip) {
  * @returns {Intent}
  */
 export function parse(q, data, ctx) {
-  const T = ' ' + q.toLowerCase().replace(/[’‘]/g, "'") + ' ';
+  const T = ' ' + q.toLowerCase().replace(/[’‘]/g, "'")
+    .replace(/\bhalf an? hour\b/g, '30 minutes')
+    .replace(/\b(an?|one) hour and a half\b/g, '1.5 hours')
+    .replace(/\b(an?|one|two|three|four|five)( and a half)? hours?\b/g, (_, n, half) => (NUM[n] + (half ? 0.5 : 0)) + ' hours') + ' ';
   /** @type {Intent} */
   const it = { tags: [], max: null, food: false, type: null, cuisine: null, diet: false, trip: null, surprise: false, greet: false, thanks: false, topic: null, level: false, longer: false, another: false, similar: false, shorter: false, clear: false, all: false };
   if (/\b(coast|coastal|sea|seaside|beach|beaches|cliffs?|ocean|coves?|harbour|lighthouse)\b/.test(T)) it.tags.push('coast');
@@ -125,20 +133,17 @@ export function parse(q, data, ctx) {
   if ((m = T.match(/(\d+)\s*(?:h|hr|hrs|hours?)\s*(\d{1,2})\b/))) it.max = parseInt(m[1], 10) * 60 + parseInt(m[2], 10);
   else if ((m = T.match(/(\d+(?:\.\d+)?)\s*(?:h|hr|hrs|hours?)\b/))) it.max = Math.round(parseFloat(m[1]) * 60);
   else if ((m = T.match(/(\d+)\s*(?:m|mins?|minutes?)\b/))) it.max = parseInt(m[1], 10);
-  if (/hour and a half|one and a half hours?/.test(T)) it.max = 90;
-  else if (it.max == null && /\b(an|one) hour\b/.test(T)) it.max = 60;
-  else if (it.max == null && /\btwo hours\b/.test(T)) it.max = 120;
-  if (it.max == null && /\b(close|near|nearby|short|quick|not far|closest|nearest)\b/.test(T) && !/\bnear [a-z]/.test(T.replace(/\bnear (me|dublin|the city)\b/, ''))) it.max = 60;
-  it.longer = /\b(long|longer|far|further|farther|full day|weekend|furthest)\b/.test(T);
-  it.food = /\b(eat|eating|food|lunch|dinner|breakfast|brunch|restaurants?|cafes?|cafés?|coffee|pubs?|pint|seafood|fish|oysters?|fine dining|fancy|hungry|bite|cuisines?|meal|cake)\b/.test(T);
+  // "near", "quick" and the like only suggest a limit; if nothing fits, the closest drives are shown instead.
+  if (it.max == null && /\b(close|near|nearby|short|quick|not far|closest|nearest)\b/.test(T) && !/\bnear [a-z]/.test(T.replace(/\bnear (me|dublin|the city)\b/, ''))) { it.max = 60; it.vague = true; }
+  it.longer = /\b(long|longer|longest|far|further|farther|full day|weekend|furthest)\b/.test(T);
+  it.food = /\b(eat|eats|eating|food|lunch|dinner|breakfast|brunch|restaurants?|cafes?|cafés?|coffee|pubs?|pint|seafood|fish|oysters?|fine dining|fancy|hungry|bite|cuisines?|meal|cake)\b/.test(T);
   if (/\b(cafes?|cafés?|coffee|brunch|breakfast|cake|snack)\b/.test(T)) it.type = 'Café';
   else if (/\b(pubs?|pint|gastro)\b/.test(T)) it.type = 'Pub';
   else if (/\b(fine dining|fancy|special occasion|tasting|treat|romantic|anniversary|posh)\b/.test(T)) it.type = 'Fine dining';
   else if (/\b(restaurants?|dinner)\b/.test(T)) it.type = 'Restaurant';
   if (/\b(seafood|fish|oysters?|shellfish|mussels|crab)\b/.test(T)) it.cuisine = 'Seafood';
-  else if (/\bfrench\b/.test(T)) it.cuisine = 'French';
-  else if (/\bmediterranean\b/.test(T)) it.cuisine = 'Mediterranean';
-  else if (/\beuropean\b/.test(T)) it.cuisine = 'European';
+  else if ((m = T.match(new RegExp('\\b(' + CUISINES.join('|') + ')\\b')))) it.cuisine = cap(m[1]);
+  if (it.cuisine) it.food = true;
   it.diet = /\b(vegan|vegetarian|veggie|gluten|coeliac|celiac|halal|kosher|allerg\w*|dairy)\b/.test(T);
   it.surprise = /\b(surprise|random|you choose|you pick|dunno|don't know|no idea|whatever|another surprise)\b/.test(T);
   it.greet = /^\s*(hi|hello|hey|hiya|howya|good (morning|afternoon|evening))\b/.test(T);
@@ -246,10 +251,17 @@ function drives(it, data, ctx, env) {
     ctx.last = [t]; ctx.trip = t;
     return { kind: 'surprise', text: 'How about this one: <strong>' + esc(t.en) + '</strong>. ' + esc(t.blurb || t.desc), cards: [t], chips: ['Where to eat on this drive', 'Another surprise', 'Something similar'] };
   }
-  if (ctx.tags.length) list = list.filter((t) => ctx.tags.some((g) => t.tags.indexOf(g) > -1));
-  const max = ctx.max;
-  if (max != null) list = list.filter((t) => t.mins <= max + 5);
-  list.sort((a, b) => (it.longer ? b.mins - a.mins : a.mins - b.mins));
+  const tags = ctx.tags, fit = (/** @type {Trip} */ t) => tags.filter((g) => t.tags.indexOf(g) > -1).length;
+  if (tags.length) list = list.filter((t) => fit(t) > 0);
+  // Drives with more of the scenery asked for come first ("mountains and the sea"), then by distance.
+  list.sort((a, b) => fit(b) - fit(a) || (it.longer ? b.mins - a.mins : a.mins - b.mins));
+  const max = ctx.max, within = list.filter((t) => max == null || t.mins <= max + 5);
+  if (!within.length && it.vague && list.length) {
+    const d = describe({ ...ctx, max: null }); ctx.max = null;
+    ctx.last = list; ctx.offset = 0; ctx.trip = list[0];
+    return { kind: 'drives', text: 'Nothing' + (d ? ' for ' + esc(d) : '') + ' is under an hour from Dublin. These are the closest:', cards: list.slice(0, 3), chips: refine(ctx) };
+  }
+  list = within;
   if (!list.length) {
     const d = describe(ctx); ctx.max = null;
     return { kind: 'drives-none', text: 'None of the nine drives match ' + esc(d || 'that') + '. The closest start about 50 minutes from the city.', chips: ['Under an hour', 'The coast', 'Mountains', 'Show all nine'] };
@@ -283,8 +295,8 @@ function one(t, data, ctx) {
 function food(it, data, ctx) {
   /* Which drives to search. A named drive wins. Otherwise scenery or a time limit in the question
      ("seafood near the coast") means every drive that matches, not just the one on screen. Only a
-     bare food question ("lunch?") falls back to the drive being discussed. */
-  const max = it.max;
+     bare food question ("lunch?", "a quick lunch") falls back to the drive being discussed. */
+  const max = it.vague ? null : it.max;
   const scoped = data.trips.filter((t) => (!it.tags.length || it.tags.some((g) => t.tags.indexOf(g) > -1)) && (max == null || t.mins <= max + 5));
   const trips = it.trip ? [it.trip] : (it.tags.length || max != null) ? scoped : ctx.trip ? [ctx.trip] : null;
   const many = !!trips && trips.length > 1;
