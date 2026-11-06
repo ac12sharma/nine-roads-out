@@ -1,12 +1,14 @@
-/* Nine Roads Out: page behaviour. Everything here enhances pages that already work without JavaScript. */
+/* Nine Roads Out: page behaviour. Everything here enhances pages that already work without JavaScript.
+   Written as a module so it can import src/shared/; src/bundle.mjs turns it into one classic script. */
+import { esc, fmtMins, sunTimes, fmtClock, DUBLIN } from '../shared/format.mjs';
+import { normalise, fromDrives, statsOf, levelLine, nextLine, shareText, TOTAL } from '../shared/levels.mjs';
+import { START, newContext, greeting, reply } from '../shared/planner.mjs';
 (function(){
 'use strict';
 const $=(s,r)=>(r||document).querySelector(s);
 const $$=(s,r)=>Array.prototype.slice.call((r||document).querySelectorAll(s));
 const RM=window.matchMedia?window.matchMedia('(prefers-reduced-motion: reduce)'):{matches:false};
 const RAD=Math.PI/180;
-const fmtMins=m=>{m=Math.round(m);if(m<60)return m+' min';const h=Math.floor(m/60),r=m%60;return r?h+' h '+String(r).padStart(2,'0'):h+' h';};
-const escH=s=>String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 
 /* ---------- menu ---------- */
 $$('.menu-panel a').forEach(a=>a.addEventListener('click',()=>{const d=a.closest('details');if(d)d.removeAttribute('open');}));
@@ -35,22 +37,13 @@ $$('[data-consent]').forEach(b=>b.addEventListener('click',()=>{
 }));
 
 /* ---------- daylight ---------- */
-function sunTimes(date,lat,lon){
-  const JD=date.getTime()/864e5+2440587.5,n=Math.ceil(JD-2451545+0.0008),Js=n-lon/360,M=(357.5291+0.98560028*Js)%360;
-  const C=1.9148*Math.sin(M*RAD)+0.02*Math.sin(2*M*RAD)+0.0003*Math.sin(3*M*RAD),L=(M+C+180+102.9372)%360;
-  const Jt=2451545+Js+0.0053*Math.sin(M*RAD)-0.0069*Math.sin(2*L*RAD);
-  const sd=Math.sin(L*RAD)*Math.sin(23.44*RAD),cd=Math.cos(Math.asin(sd));
-  const cw=(Math.sin(-0.833*RAD)-Math.sin(lat*RAD)*sd)/(Math.cos(lat*RAD)*cd),w0=Math.acos(Math.max(-1,Math.min(1,cw)))/RAD;
-  const toD=J=>new Date((J-2440587.5)*864e5);return{rise:toD(Jt-w0/360),set:toD(Jt+w0/360)};
-}
-const TF={hour:'2-digit',minute:'2-digit',hour12:false,timeZone:'Europe/Dublin'};
 function daylight(trips){
   if(!$('#dl-rise'))return;
   try{
-    const now=new Date(),s=sunTimes(now,53.3498,-6.2603);
+    const now=new Date(),s=sunTimes(now,DUBLIN.lat,DUBLIN.lon);
     $('#dl-date').textContent=now.toLocaleDateString('en-IE',{weekday:'long',day:'numeric',month:'long',timeZone:'Europe/Dublin'});
-    $('#dl-rise').textContent=s.rise.toLocaleTimeString('en-IE',TF);
-    $('#dl-set').textContent=s.set.toLocaleTimeString('en-IE',TF);
+    $('#dl-rise').textContent=fmtClock(s.rise);
+    $('#dl-set').textContent=fmtClock(s.set);
     const dh=(s.set-s.rise)/36e5;$('#dl-len').textContent=fmtMins(dh*60)+' of daylight';
     if(trips){
       const miss=trips.filter(t=>t.drive+3>dh),fit=trips.length-miss.length;
@@ -62,22 +55,9 @@ function daylight(trips){
 }
 
 /* ---------- traveller levels: saved only in this browser ---------- */
-const KEY='nro-progress-v1',TOTAL=26;
-const LEVELS=[{n:0,name:'Not on the road yet',min:0},{n:1,name:'Day-tripper',min:1},{n:2,name:'Road-tripper',min:9},{n:3,name:'Grand tourer',min:18}];
-function readP(){
-  try{const v=JSON.parse(localStorage.getItem(KEY)||'null')||{};
-    return{drives:Array.isArray(v.drives)?v.drives:[],manual:Array.isArray(v.manual)?v.manual:[],dc:v.dc&&typeof v.dc==='object'?v.dc:{}};
-  }catch(e){return{drives:[],manual:[],dc:{}};}
-}
+const KEY='nro-progress-v1';
+function readP(){try{return normalise(JSON.parse(localStorage.getItem(KEY)||'null'));}catch(e){return normalise(null);}}
 function writeP(p){try{localStorage.setItem(KEY,JSON.stringify(p));}catch(e){}refreshLevels();}
-function fromDrives(p){const s=new Set();p.drives.forEach(id=>(p.dc[id]||[]).forEach(c=>s.add(c)));return s;}
-function statsOf(p){
-  const all=new Set(p.manual);fromDrives(p).forEach(c=>all.add(c));
-  const n=all.size,pct=Math.round(n/TOTAL*100);let L=LEVELS[0];LEVELS.forEach(l=>{if(n>=l.min)L=l;});
-  return{all:all,n:n,pct:pct,L:L,N:LEVELS.find(l=>l.min>n)||null};
-}
-const levelLine=st=>'Level '+st.L.n+' '+st.L.name.toLowerCase()+', with '+st.pct+'% of Ireland\'s counties';
-function shareText(st){return st.n?'I\'m a Level '+st.L.n+' '+st.L.name.toLowerCase()+' on Nine Roads Out: I\'ve driven '+st.n+' of Ireland\'s 26 counties ('+st.pct+'%). How much of Ireland have you driven?':'How much of Ireland have you driven?';}
 function toggleDrive(id,counties,on){
   const p=readP(),i=p.drives.indexOf(id);
   if(on&&i<0){p.drives.push(id);p.dc[id]=counties;}
@@ -95,7 +75,7 @@ function refreshLevels(){
     const id=b.getAttribute('data-done'),on=p.drives.indexOf(id)>-1;b.setAttribute('aria-pressed',String(on));
     $('.done-t',b).textContent=on?'You\'ve done this drive':'I\'ve done this drive';
     const msg=b.parentElement.querySelector('[data-done-msg]');
-    if(msg&&on){msg.innerHTML='Counted. You\'re a '+escH(levelLine(st))+'. <a href="'+escH(($('.lvl-pill')||{}).getAttribute?$('.lvl-pill').getAttribute('href'):'#')+'">See your map</a>.';}
+    if(msg&&on){msg.innerHTML='Counted. You\'re a '+esc(levelLine(st))+'. <a href="'+esc(($('.lvl-pill')||{}).getAttribute?$('.lvl-pill').getAttribute('href'):'#')+'">See your map</a>.';}
     else if(msg&&msg.__orig)msg.innerHTML=msg.__orig;
   });
   if(mapView)mapView(p,st);
@@ -161,7 +141,7 @@ let mapView=null;
     $('[data-lvl-pct]',root).textContent=st.pct;
     $('[data-lvl-count]',root).textContent=st.n+' of 26 counties driven';
     $('[data-lvl-fill]',root).style.width=(st.n/TOTAL*100).toFixed(2)+'%';
-    $('[data-lvl-next]',root).textContent=!st.n?'Tick off a drive or tap a county to start.':st.N?(st.N.min-st.n)+' more '+(st.N.min-st.n===1?'county':'counties')+' to Level '+st.N.n+', '+st.N.name.toLowerCase()+'.':'Top level. You\'ve driven most of Ireland.';
+    $('[data-lvl-next]',root).textContent=nextLine(st);
     const wa=$('[data-share-wa]',root);if(wa)wa.href='https://wa.me/?text='+encodeURIComponent(shareText(st)+' '+url);
     root.classList.toggle('lvl-3',st.L.n===3);
   };
@@ -250,8 +230,7 @@ function planner(){
     (AI?'<p class="pl-note">Questions the planner can\'t answer itself are sent to an AI service. Please don\'t include personal details.</p>':'')+
     '</section>';
   const launch=$('.pl-launch',host),panel=$('.pl-panel',host),log=$('.pl-log',host),form=$('.pl-form',host),input=$('#pl-input',host);
-  let started=false;const history=[];const ctx={tags:[],max:null,trip:null,last:[],offset:0};
-  const START=['The coast','Mountains','History and ruins','Under an hour','Lunch stops','Surprise me'];
+  let started=false;const history=[];const ctx=newContext();
 
   /* On small screens the panel covers the whole page, so it behaves as a modal dialog: the rest of the
      page is made inert so Tab can't reach controls hidden behind it. On wider screens it floats beside
@@ -272,167 +251,30 @@ function planner(){
 
   function add(cls,html){const m=document.createElement('div');m.className='pl-msg '+cls;m.innerHTML=html;log.appendChild(m);log.scrollTop=log.scrollHeight;return m;}
   function bot(text,extra){const m=add('pl-bot','<p>'+text+'</p>'+(extra||''));$$('.pl-chip',m).forEach(b=>b.addEventListener('click',()=>ask(b.getAttribute('data-q'))));const names=$$('.pl-card-n,.pl-eat-n',m).map(x=>x.textContent);history.push({role:'assistant',content:(m.querySelector('p').textContent+(names.length?' ('+names.join(', ')+')':'')).slice(0,600)});log.scrollTop=log.scrollHeight;}
-  const chips=list=>'<div class="pl-chips">'+list.filter(Boolean).map(c=>'<button type="button" class="chip pl-chip" data-q="'+escH(c)+'">'+escH(c)+'</button>').join('')+'</div>';
-  const link=(href,label)=>' <a href="'+escH(href)+'">'+escH(label)+'</a>';
+  const chips=list=>'<div class="pl-chips">'+list.filter(Boolean).map(c=>'<button type="button" class="chip pl-chip" data-q="'+esc(c)+'">'+esc(c)+'</button>').join('')+'</div>';
   function ask(q){
-    add('pl-user','<p>'+escH(q)+'</p>');history.push({role:'user',content:q});
+    add('pl-user','<p>'+esc(q)+'</p>');history.push({role:'user',content:q});
     const typing=add('pl-bot pl-typing','<p><span></span><span></span><span></span></p>');
     load().then(()=>{setTimeout(()=>{typing.remove();try{respond(q);}catch(e){bot('Sorry, something went wrong there. Try one of these.',chips(START));}},RM.matches?0:280);})
       .catch(()=>{typing.remove();bot('I couldn\'t load the drive details just now. Check your connection and try again.');});
   }
-  const byId=id=>D.trips.filter(t=>t.id===id)[0];
-  const card=t=>'<a class="pl-card" href="'+urlOf(t.slug)+'"><img src="'+img(t.id)+'" alt="" width="96" height="64" loading="lazy"><span><span class="pl-card-n">'+escH(t.en)+'</span><span class="pl-card-m">'+fmtMins(t.mins)+' '+t.wind+', about '+fmtMins(t.drive*60)+' at the wheel</span></span></a>';
-  const eatRow=(r,t)=>'<div class="pl-eat"><span class="pl-eat-n">'+escH(r.name)+'</span><span class="pl-eat-m">'+(r.featured?'Featured · ':'')+escH(r.type)+' in '+escH(r.town)+(t?', on the '+escH(t.en)+' drive':'')+'</span><a href="'+escH(r.map)+'" target="_blank" rel="noopener">Map</a></div>';
-  const TAGNAME={coast:'the coast',mountains:'mountains',heritage:'history and ruins'};
-  const TAGADJ={coast:'coastal',mountains:'mountain',heritage:'heritage'};
-  const TYPEPL={'Café':'cafés','Pub':'pubs','Restaurant':'restaurants','Fine dining':'fine dining'};
-
-  function greet(){
-    const t=PAGE_TRIP&&D?byId(PAGE_TRIP):null;
-    if(t){ctx.trip=t;ctx.last=[t];bot('Planning the '+escH(t.en)+' drive? I can find places to eat on it, suggest something similar, or answer questions about timing and tolls.',chips(['Where to eat on this drive','Something similar','Something shorter','The coast']));}
-    else bot('Where do you want to go? Pick a kind of day out, or tell me a place, how far you\'ll drive or what you\'d like to eat.',chips(START));
+  const card=t=>'<a class="pl-card" href="'+urlOf(t.slug)+'"><img src="'+img(t.id)+'" alt="" width="96" height="64" loading="lazy"><span><span class="pl-card-n">'+esc(t.en)+'</span><span class="pl-card-m">'+fmtMins(t.mins)+' '+t.wind+', about '+fmtMins(t.drive*60)+' at the wheel</span></span></a>';
+  const eatRow=(r,t)=>'<div class="pl-eat"><span class="pl-eat-n">'+esc(r.name)+'</span><span class="pl-eat-m">'+(r.featured?'Featured · ':'')+esc(r.type)+' in '+esc(r.town)+(t?', on the '+esc(t.en)+' drive':'')+'</span><a href="'+esc(r.map)+'" target="_blank" rel="noopener">Map</a></div>';
+  /* The answers come from src/shared/planner.mjs, which tests/planner-eval.test.mjs also runs. */
+  const env={url:{guide:guide,map:mapUrl,hire:hireUrl,noCar:noCarUrl},stats:()=>statsOf(readP()),ai:!!AI};
+  function show(r){
+    if(r.kind==='ai'){ai();return;}
+    bot(r.text,(r.cards||[]).map(card).join('')+(r.eats||[]).map(e=>eatRow(e.r,e.t)).join('')+(r.notes||[]).map(n=>'<p class="pl-more">'+n+'</p>').join('')+chips(r.chips));
   }
-
-  function parse(q){
-    const T=' '+q.toLowerCase().replace(/[’‘]/g,"'")+' ';
-    const it={tags:[],max:null,food:false,type:null,cuisine:null,diet:false,trip:null,surprise:false,greet:false,thanks:false,topic:null,level:false,longer:false,another:false,similar:false,shorter:false,clear:false,all:false};
-    if(/\b(coast|coastal|sea|seaside|beach|beaches|cliffs?|ocean|coves?|harbour|lighthouse)\b/.test(T))it.tags.push('coast');
-    if(/\b(mountains?|hills?|hike|hiking|pass|passes|views?|scenic|bog|lakes?|lough|wild|walks?|walking)\b/.test(T))it.tags.push('mountains');
-    if(/\b(histor\w*|castles?|abbeys?|monaster\w*|ancient|tombs?|ruins?|heritage|cathedral|church|neolithic|celtic|medieval|monuments?)\b/.test(T))it.tags.push('heritage');
-    let m;
-    if((m=T.match(/(\d+)\s*(?:h|hr|hrs|hours?)\s*(\d{1,2})\b/)))it.max=parseInt(m[1],10)*60+parseInt(m[2],10);
-    else if((m=T.match(/(\d+(?:\.\d+)?)\s*(?:h|hr|hrs|hours?)\b/)))it.max=Math.round(parseFloat(m[1])*60);
-    else if((m=T.match(/(\d+)\s*(?:m|mins?|minutes?)\b/)))it.max=parseInt(m[1],10);
-    if(/hour and a half|one and a half hours?/.test(T))it.max=90;
-    else if(it.max==null&&/\b(an|one) hour\b/.test(T))it.max=60;
-    else if(it.max==null&&/\btwo hours\b/.test(T))it.max=120;
-    if(it.max==null&&/\b(close|near|nearby|short|quick|not far|closest|nearest)\b/.test(T)&&!/\bnear [a-z]/.test(T.replace(/\bnear (me|dublin|the city)\b/,'')))it.max=60;
-    it.longer=/\b(long|longer|far|further|farther|full day|weekend|furthest)\b/.test(T);
-    it.food=/\b(eat|eating|food|lunch|dinner|breakfast|brunch|restaurants?|cafes?|cafés?|coffee|pubs?|pint|seafood|fish|oysters?|fine dining|fancy|hungry|bite|cuisines?|meal|cake)\b/.test(T);
-    if(/\b(cafes?|cafés?|coffee|brunch|breakfast|cake|snack)\b/.test(T))it.type='Café';
-    else if(/\b(pubs?|pint|gastro)\b/.test(T))it.type='Pub';
-    else if(/\b(fine dining|fancy|special occasion|tasting|treat|romantic|anniversary|posh)\b/.test(T))it.type='Fine dining';
-    else if(/\b(restaurants?|dinner)\b/.test(T))it.type='Restaurant';
-    if(/\b(seafood|fish|oysters?|shellfish|mussels|crab)\b/.test(T))it.cuisine='Seafood';
-    else if(/\bfrench\b/.test(T))it.cuisine='French';
-    else if(/\bmediterranean\b/.test(T))it.cuisine='Mediterranean';
-    else if(/\beuropean\b/.test(T))it.cuisine='European';
-    it.diet=/\b(vegan|vegetarian|veggie|gluten|coeliac|celiac|halal|kosher|allerg\w*|dairy)\b/.test(T);
-    it.surprise=/\b(surprise|random|you choose|you pick|dunno|don't know|no idea|whatever|another surprise)\b/.test(T);
-    it.greet=/^\s*(hi|hello|hey|hiya|howya|good (morning|afternoon|evening))\b/.test(T);
-    it.thanks=/\b(thanks|thank you|cheers)\b/.test(T);
-    if(/\b(toll|tolls|m50|eflow)\b/.test(T))it.topic='tolls';
-    else if(/\b(speed|limits?|km\/h)\b/.test(T))it.topic='speed';
-    else if(/\b(sunset|sunrise|daylight|dark|light)\b/.test(T))it.topic='daylight';
-    else if(/\b(weather|rain|fog|snow|forecast)\b/.test(T))it.topic='weather';
-    else if(/\broad signs?\b|\bsigns?\b/.test(T)&&!it.food)it.topic='signs';
-    else if(/\b(no car|without a car|don't have a car|dont have a car|tours?|guided|public transport|bus|by bus|buses|train|trains)\b/.test(T))it.topic='nocar';
-    else if(/\b(car hire|hire a car|hiring a car|rent a car|renting|rental|hire car|insurance|excess|automatic)\b/.test(T))it.topic='car';
-    it.level=/\b(level|levels|how much of ireland|counties|my map|badge|traveller)\b/.test(T);
-    it.another=/\b(another|other|different|something else|next)\b/.test(T);
-    it.similar=/\b(similar|like this|like that)\b/.test(T);
-    it.shorter=/\b(shorter|closer|nearer)\b/.test(T);
-    it.clear=/\b(clear|reset|start again|start over)\b/.test(T);
-    it.all=/\b(all nine|all of them|show all|every drive|all drives|list)\b/.test(T);
-    let best=null,score=0;
-    const hit=w=>new RegExp('(^|[^a-z\u00e0-\u00fa])'+w.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')+'([^a-z\u00e0-\u00fa]|$)').test(T);
-    D.trips.forEach(t=>{let s=0;[t.en.toLowerCase()].concat(t.words,t.stops.map(x=>x.toLowerCase())).forEach(w=>{if(w&&w.length>2&&hit(w))s+=w.length;});if(s>score){score=s;best=t;}});
-    if(/\b(this drive|this one|these|that one|on it)\b/.test(T)&&!best)best=ctx.trip;
-    it.trip=best;
-    // "anything" on its own means "you pick"; "anything near Kells" or "anything coastal" doesn't.
-    if(!it.surprise&&/\banything\b/.test(T)&&!it.trip&&!it.tags.length&&!it.food&&it.max==null&&!it.topic)it.surprise=true;
-    it.any=!!(it.tags.length||it.max!=null||it.food||it.trip||it.surprise||it.topic||it.level||it.diet||it.another||it.similar||it.shorter||it.clear||it.all||it.longer);
-    return it;
-  }
-
-  function respond(q){
-    const it=parse(q);
-    if(it.greet&&!it.any){bot('Hello! Where do you want to go? Pick a kind of day out, or tell me a place, how far you\'ll drive or what you\'d like to eat.',chips(START));return;}
-    if(it.thanks&&!it.any){bot('You\'re welcome. Enjoy the drive, and check opening times before you set off.',chips(['Another drive','Lunch stops']));return;}
-    if(it.topic){topic(it.topic);return;}
-    if(it.level&&!it.trip&&!it.food){level();return;}
-    if(it.clear){ctx.tags=[];ctx.max=null;ctx.trip=null;ctx.last=[];bot('Cleared. Where do you want to go?',chips(START));return;}
-    if(it.food||it.diet){food(it);return;}
-    if(it.similar&&ctx.trip){const base=ctx.trip;const list=D.trips.filter(t=>t.id!==base.id&&t.tags.some(g=>base.tags.indexOf(g)>-1)).sort((a,b)=>Math.abs(a.mins-base.mins)-Math.abs(b.mins-base.mins));
-      if(list.length){ctx.last=list;ctx.trip=list[0];bot('If you like '+escH(base.en)+', try these. They share its '+base.tags.map(g=>TAGNAME[g]).join(' and ')+'.',list.slice(0,3).map(card).join('')+chips(['Where to eat on '+list[0].en,'Something shorter','Show all nine']));return;}}
-    if(it.shorter&&ctx.trip&&!it.tags.length&&it.max==null){const base=ctx.trip;const list=D.trips.filter(t=>t.mins<base.mins).sort((a,b)=>b.mins-a.mins);
-      if(!list.length){bot(escH(base.en)+' is already one of the closest drives, at '+fmtMins(base.mins)+' from Dublin.',chips(['Something similar','Where to eat on this drive']));return;}
-      ctx.last=list;ctx.trip=list[0];bot('Closer to Dublin than '+escH(base.en)+':',list.slice(0,3).map(card).join('')+chips(['Where to eat on '+list[0].en,'Something similar']));return;}
-    if(it.trip&&it.max==null&&!it.surprise&&!it.another&&!it.all){one(it.trip);return;}
-    if(it.another&&!it.tags.length&&it.max==null&&ctx.last.length>1){ctx.offset=(ctx.offset+3)%ctx.last.length;const list=ctx.last.slice(ctx.offset,ctx.offset+3);bot('Here are some more:',list.map(card).join('')+chips(refine()));return;}
-    if(it.tags.length||it.max!=null||it.surprise||it.longer||it.all||it.another){drives(it);return;}
-    fallback();
-  }
-
-  function describe(){const p=[];if(ctx.tags.length)p.push(ctx.tags.map(g=>TAGNAME[g]).join(' or '));if(ctx.max!=null)p.push('within '+fmtMins(ctx.max)+' of Dublin');return p.length?p.join(', '):'';}
-  function refine(){return['Where to eat on these',ctx.max==null||ctx.max>90?'Under 1 h 30':'Under 2 h 15',ctx.tags.indexOf('coast')>-1?'Mountains':'The coast','Clear filters'];}
-  function drives(it){
-    if(it.all){ctx.tags=[];ctx.max=null;}
-    if(it.tags.length)ctx.tags=it.tags;
-    if(it.max!=null)ctx.max=it.max;
-    let list=D.trips.slice();
-    if(it.surprise){const t=list[Math.floor(Math.random()*list.length)];ctx.last=[t];ctx.trip=t;bot('How about this one: <strong>'+escH(t.en)+'</strong>. '+escH(t.blurb||t.desc),card(t)+chips(['Where to eat on this drive','Another surprise','Something similar']));return;}
-    if(ctx.tags.length)list=list.filter(t=>ctx.tags.some(g=>t.tags.indexOf(g)>-1));
-    if(ctx.max!=null)list=list.filter(t=>t.mins<=ctx.max+5);
-    list.sort((a,b)=>it.longer?b.mins-a.mins:a.mins-b.mins);
-    if(!list.length){const d=describe();ctx.max=null;bot('None of the nine drives match '+escH(d||'that')+'. The closest start about 50 minutes from the city.',chips(['Under an hour','The coast','Mountains','Show all nine']));return;}
-    ctx.last=list;ctx.offset=0;ctx.trip=list[0];
-    const d=describe();
-    const lead=it.all||!d?'All nine drives, '+(it.longer?'longest first':'closest first')+'.':(list.length===1?'One drive fits '+escH(d)+'.':list.length+' drives fit '+escH(d)+(list.length>3?'. Here are the '+(it.longer?'longest':'closest')+' three.':'.'));
-    bot(lead,(it.all?list:list.slice(0,3)).map(card).join('')+chips(list.length>3&&!it.all?['Another drive'].concat(refine()):refine()));
-  }
-  function one(t){
-    ctx.trip=t;ctx.last=[t];const n=(D.eat[t.id]||[]).length;
-    bot('<strong>'+escH(t.en)+'</strong>. '+escH(t.blurb||t.desc)+' Best time: '+escH(t.best.charAt(0).toLowerCase()+t.best.slice(1))+'.',card(t)+chips([n?'Where to eat on this drive':null,'Something similar','Something shorter']));
-  }
-  function food(it){
-    /* Which drives to search. A named drive wins. Otherwise scenery or a time limit in the question
-       ("seafood near the coast") means every drive that matches, not just the one on screen. Only a
-       bare food question ("lunch?") falls back to the drive being discussed. */
-    const scoped=D.trips.filter(t=>(!it.tags.length||it.tags.some(g=>t.tags.indexOf(g)>-1))&&(it.max==null||t.mins<=it.max+5));
-    const trips=it.trip?[it.trip]:(it.tags.length||it.max!=null)?scoped:ctx.trip?[ctx.trip]:null;
-    const many=!!trips&&trips.length>1;
-    let pre='';
-    if(it.diet)pre='The listings here don\'t include dietary details I can check, but most Irish cafés and restaurants can cater for vegetarian, vegan and coeliac diets if you ask ahead. Ring before you go to be sure. ';
-    let rows=[];(trips||D.trips).forEach(t=>(D.eat[t.id]||[]).forEach(r=>rows.push([r,t])));
-    if(it.type)rows=rows.filter(x=>x[0].type===it.type);
-    if(it.cuisine)rows=rows.filter(x=>x[0].cuisine.indexOf(it.cuisine)>-1);
-    const one=trips&&trips.length===1?trips[0]:null;
-    const where=one?'on the '+escH(one.en)+' drive':trips?'on the '+(it.tags.length?it.tags.map(g=>TAGADJ[g]).join(' and ')+' ':'')+'drives'+(it.max!=null?' within '+fmtMins(it.max)+' of Dublin':''):'across the nine drives';
-    const what=(it.cuisine?it.cuisine.toLowerCase()+' ':'')+(it.type?TYPEPL[it.type]:'places to eat');
-    if(!rows.length){
-      const avail=one?[...new Set((D.eat[one.id]||[]).map(r=>r.type))]:[];
-      bot(pre+'I don\'t have any '+escH(what)+' listed '+where+'.',chips(avail.length?avail.map(ty=>TYPEPL[ty].charAt(0).toUpperCase()+TYPEPL[ty].slice(1)+' on this drive'):['Seafood','Cafés','Fine dining']));return;
-    }
-    if(it.trip)ctx.trip=it.trip;
-    const more=one?['Cafés','Pubs','Restaurants','Fine dining'].filter(l=>(D.eat[one.id]||[]).some(r=>TYPEPL[r.type]===l.toLowerCase())&&(!it.type||TYPEPL[it.type]!==l.toLowerCase())).map(l=>l+' on this drive'):(many?trips:D.trips).slice(0,3).map(t=>'Lunch near '+t.en);
-    bot(pre+escH(what.charAt(0).toUpperCase()+what.slice(1))+' '+where+':',rows.slice(0,6).map(x=>eatRow(x[0],one?null:x[1])).join('')+(rows.length>6?'<p class="pl-more">And '+(rows.length-6)+' more. Tell me which drive to narrow it down.</p>':'')+'<p class="pl-more">Opening hours change, so check before you go.</p>'+chips(more));
-  }
-  function topic(k){
-    if(k==='tolls')bot('The M50 toll around Dublin is barrier-free: pay online at eflow.ie by 8pm the next day. The M1, M3 and M7/M8 have toll plazas you pay as you pass.'+link(guide('tolls'),'More on tolls'),chips(['Speed limits','Under an hour']));
-    else if(k==='speed')bot('Default limits are 120 km/h on motorways, 100 on national roads, 80 on regional roads, 60 on rural local roads and 50 in towns. The posted sign always wins.'+link(guide('speed'),'Speed limits in full'),chips(['Tolls','Daylight today']));
-    else if(k==='daylight'){const s=sunTimes(new Date(),53.3498,-6.2603),dh=(s.set-s.rise)/36e5,ok=D.trips.filter(t=>t.drive+3<=dh);
-      bot('Today in Dublin the sun rises at '+s.rise.toLocaleTimeString('en-IE',TF)+' and sets at '+s.set.toLocaleTimeString('en-IE',TF)+', which is '+fmtMins(dh*60)+' of daylight. That\'s enough for '+(ok.length===D.trips.length?'any of the nine drives':ok.length+' of the nine drives')+', allowing about three hours for stops.'+link(guide('daylight'),'Daylight by month'),chips(['Under an hour','Surprise me']));}
-    else if(k==='weather')bot('On the mountain and coast drives, the weather is the view: in fog you see nothing at all. Check Met Éireann the night before and keep a closer drive in reserve. Some mountain roads aren\'t gritted in ice or snow.'+link(guide('weather'),'Weather tips'),chips(['History and ruins','Under an hour']));
-    else if(k==='signs')bot('Blue signs mean motorways, green mean national roads, white mean regional roads and brown point to attractions. Place names show Irish in italics above English in capitals.'+link(guide('signs'),'Reading Irish road signs'),chips(['Speed limits','Tolls']));
-    else if(k==='nocar')bot('Glendalough and the Boyne Valley work well without a car: there\'s a daily bus to Glendalough, and guided tours from Dublin go to Newgrange. You can reach Carlingford, Tramore and Cashel by public transport too, but most of the other drives need a car.'+link(noCarUrl,'Which drives work without a car'),chips(['Glendalough','Boyne Valley','Hiring a car']));
-    else bot('Most of these drives need a car. Book early for summer weekends, especially if you need an automatic, check the insurance excess before you sign, and ask who pays the M50 toll.'+link(hireUrl,'Hiring a car in Dublin: what to know'),chips(['Under an hour','No car? Tours and buses']));
-  }
-  function level(){
-    const st=statsOf(readP());
-    bot(st.n?'You\'re a '+escH(levelLine(st))+'.'+(st.N?' '+(st.N.min-st.n)+' more counties to Level '+st.N.n+'.':'')+link(mapUrl,'Open your map'):'You haven\'t marked any counties yet. Tick off drives and counties on your map to find your traveller level.'+link(mapUrl,'Open your map'),chips(['Surprise me','The coast']));
-  }
-  function fallback(){
-    if(AI){ai();return;}
-    bot('I can help you pick a drive, find somewhere to eat and plan timing. Try one of these, or ask something like "coast within 2 hours" or "lunch near Glendalough".',chips(START));
-  }
+  function greet(){show(greeting(D,ctx,PAGE_TRIP));}
+  function respond(q){show(reply(q,D,ctx,env));}
   function ai(){
     const typing=add('pl-bot pl-typing','<p><span></span><span></span><span></span></p>');
     fetch(AI,{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({messages:history.slice(-8)})})
       .then(r=>r.ok?r.json():Promise.reject(r.status)).then(d=>{
         typing.remove();const text=String(d.reply||'');const found=D.trips.filter(t=>text.indexOf(t.en)>-1).slice(0,3);
         if(found.length){ctx.trip=found[0];ctx.last=found;}
-        bot(escH(text).replace(/\n{2,}/g,'</p><p>').replace(/\n/g,'<br>'),found.map(card).join('')+chips(found.length?['Where to eat on '+found[0].en,'Something similar']:START.slice(0,3)));
+        bot(esc(text).replace(/\n{2,}/g,'</p><p>').replace(/\n/g,'<br>'),found.map(card).join('')+chips(found.length?['Where to eat on '+found[0].en,'Something similar']:START.slice(0,3)));
       }).catch(()=>{typing.remove();bot('I couldn\'t get an answer to that just now. Try one of these instead.',chips(START));});
   }
 }

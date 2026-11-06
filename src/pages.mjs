@@ -3,6 +3,7 @@ import { esc, fmtMins, mapsURL, fillQ, windWords, sunTimes, fmtClock } from './l
 import { FILTERS } from './content/trips.mjs';
 import { TYPES, mapsSearch } from './content/restaurants.mjs';
 import { THEMES, NOCAR } from './content/guides.mjs';
+import { TOTAL, levelFor, levelBands } from './shared/levels.mjs';
 
 export function createRenderer({ config, trips, assets, preview, restaurants, irelandMap, photos = {} }) {
   const adsOn = !!config.adsense.client && !preview;
@@ -520,7 +521,8 @@ ${adsOn ? `<p>This site shows ads served by Google AdSense. If you are in the Eu
   function ireland() {
     const u = urlFor(1), M = irelandMap, names = Object.keys(M.counties);
     const all = new Set(trips.flatMap((t) => t.counties));
-    const lvlFor = (n) => (n >= 18 ? 3 : n >= 9 ? 2 : n >= 1 ? 1 : 0);
+    const bands = levelBands();
+    const at = (/** @type {number} */ n) => (n / TOTAL * 100).toFixed(2) + '%';
     const svg = `<svg class="ie-map" viewBox="0 0 ${M.w} ${M.h}" role="group" aria-label="Map of the 26 counties of the Republic of Ireland. Select a county to mark it as driven." aria-describedby="ie-keys">
 <path class="ie-ni" d="${M.ni}"/><text class="ie-ni-lab" x="300" y="92" text-anchor="middle">Northern Ireland</text>
 <g class="ie-counties">${names.map((c) => `<path class="ie-c" d="${M.counties[c]}" data-county="${esc(c)}" tabindex="${c === 'Dublin' ? 0 : -1}" role="checkbox" aria-checked="false" aria-label="${esc(c)}"><title>${esc(c)}</title></path>`).join('')}</g>
@@ -535,9 +537,9 @@ ${adsOn ? `<p>This site shows ads served by Google AdSense. If you are in the Eu
 <div class="lvl-card" aria-live="polite">
 <div class="lvl-badge"><span class="lvl-plate" data-lvl-num>0</span><div><p class="lvl-k" data-lvl-k>Your level</p><p class="lvl-name" data-lvl-name>Not on the road yet</p></div></div>
 <p class="lvl-pct"><span data-lvl-pct>0</span>%<span class="lvl-of"> of Ireland's counties</span></p>
-<p class="lvl-count" data-lvl-count>0 of 26 counties driven</p>
-<div class="lvl-bar" aria-hidden="true"><i data-lvl-fill></i><span class="lvl-tick" style="left:34.62%"></span><span class="lvl-tick" style="left:69.23%"></span></div>
-<div class="lvl-scale" aria-hidden="true"><span>Level 1</span><span style="left:34.62%">Level 2</span><span style="left:69.23%">Level 3</span></div>
+<p class="lvl-count" data-lvl-count>0 of ${TOTAL} counties driven</p>
+<div class="lvl-bar" aria-hidden="true"><i data-lvl-fill></i>${bands.slice(1).map((b) => `<span class="lvl-tick" style="left:${at(b.from)}"></span>`).join('')}</div>
+<div class="lvl-scale" aria-hidden="true">${bands.map((b, i) => `<span${i ? ` style="left:${at(b.from)}"` : ''}>Level ${b.level.n}</span>`).join('')}</div>
 <p class="lvl-next" data-lvl-next>Tick off a drive or tap a county to start.</p>
 <div class="share lvl-share" data-url="${esc(abs('/how-much-of-ireland/'))}" data-title="How much of Ireland have you driven?"><button type="button" class="share-b" data-share="copy-level">Copy my result</button><a class="share-b" data-share-wa href="https://wa.me/?text=${encodeURIComponent('How much of Ireland have you driven? ' + abs('/how-much-of-ireland/'))}" target="_blank" rel="noopener">Send on WhatsApp</a><button type="button" class="share-b" data-share="native-level" hidden>Share</button><span class="share-msg" role="status"></span></div>
 </div>
@@ -549,11 +551,9 @@ ${adsOn ? `<p>This site shows ads served by Google AdSense. If you are in the Eu
 <ul class="ie-chips">${names.map((c) => `<li><button type="button" class="chip ie-chip" data-county-chip="${esc(c)}" aria-pressed="false">${esc(c)}</button></li>`).join('')}</ul></section>
 <section class="ie-how prose" aria-labelledby="ie-how-h"><h2 id="ie-how-h">How the levels work</h2>
 <table class="t"><thead><tr><th scope="col">Level</th><th scope="col">Counties driven</th><th scope="col">Share of Ireland</th></tr></thead><tbody>
-<tr><th scope="row">Level 1, day-tripper</th><td>1 to 8</td><td>4% to 31%</td></tr>
-<tr><th scope="row">Level 2, road-tripper</th><td>9 to 17</td><td>35% to 65%</td></tr>
-<tr><th scope="row">Level 3, grand tourer</th><td>18 to 26</td><td>69% to 100%</td></tr>
+${bands.map((b) => `<tr><th scope="row">Level ${b.level.n}, ${b.level.name.toLowerCase()}</th><td>${b.from} to ${b.to}</td><td>${b.pctFrom}% to ${b.pctTo}%</td></tr>`).join('\n')}
 </tbody></table>
-<p>The share is of the 26 counties in the Republic. A county counts once you've driven on its roads, including on the way to somewhere else. All nine drives on this site together take in ${all.size} counties, which makes you a Level ${lvlFor(all.size)} traveller. Level 3 means heading west as well.</p>
+<p>The share is of the 26 counties in the Republic. A county counts once you've driven on its roads, including on the way to somewhere else. All nine drives on this site together take in ${all.size} counties, which makes you a Level ${levelFor(all.size).n} traveller. Level 3 means heading west as well.</p>
 <p>Your list is saved only in this browser, on this device. Nothing is sent to us.</p>
 <p><button type="button" class="share-b" data-reset>Clear my map</button></p>
 </section>

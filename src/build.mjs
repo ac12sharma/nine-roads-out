@@ -1,22 +1,24 @@
 // Builds the static site into ./dist (or ./preview with --preview). No dependencies: Node 18+ only.
 //   npm run build     -> dist/   (deploy this folder)
 //   npm run preview   -> preview/ (relative links, ad spaces shown as placeholders)
+//   node src/build.mjs --out <dir>   -> any folder (the tests build into a temporary one)
 import fs from 'node:fs';
 import path from 'node:path';
 import crypto from 'node:crypto';
 import { execFileSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import config from '../site.config.mjs';
-import { TRIPS } from './content/trips.mjs';
-import { RESTAURANTS, mapsSearch } from './content/restaurants.mjs';
-import { bearingOf, windOf } from './lib.mjs';
+import { RESTAURANTS } from './content/restaurants.mjs';
+import { trips, plannerData } from './data.mjs';
+import { bundle } from './bundle.mjs';
 import { createRenderer } from './pages.mjs';
 import { THEMES } from './content/guides.mjs';
 import { PHOTOS } from './content/photos.mjs';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const preview = process.argv.includes('--preview');
-const out = path.join(root, preview ? 'preview' : 'dist');
+const outArg = process.argv.indexOf('--out');
+const out = outArg > -1 ? path.resolve(process.argv[outArg + 1]) : path.join(root, preview ? 'preview' : 'dist');
 
 fs.rmSync(out, { recursive: true, force: true });
 fs.mkdirSync(out, { recursive: true });
@@ -24,11 +26,12 @@ fs.mkdirSync(out, { recursive: true });
 // 1. Static files (fonts, images, icons) copied as they are.
 fs.cpSync(path.join(root, 'public'), out, { recursive: true });
 
-// 2. CSS and JS get a content hash in the filename so they can be cached forever.
+// 2. CSS and JS get a content hash in the filename so they can be cached forever. app.js imports
+//    src/shared/, so it is bundled into a single classic script first.
 const assets = {};
 fs.mkdirSync(path.join(out, 'assets'), { recursive: true });
 for (const [key, file] of [['css', 'site.css'], ['scenes', 'scenes.js'], ['app', 'app.js']]) {
-  const src = fs.readFileSync(path.join(root, 'src/assets', file));
+  const src = file === 'app.js' ? bundle(path.join(root, 'src/assets/app.js')) : fs.readFileSync(path.join(root, 'src/assets', file));
   const hash = crypto.createHash('sha1').update(src).digest('hex').slice(0, 10);
   const name = file.replace(/\.(\w+)$/, `.${hash}.$1`);
   fs.writeFileSync(path.join(out, 'assets', name), src);
@@ -36,11 +39,7 @@ for (const [key, file] of [['css', 'site.css'], ['scenes', 'scenes.js'], ['app',
 }
 
 // 3. Data for the trip planner and traveller levels, also content-hashed.
-const trips = TRIPS.map((t) => { const b = bearingOf(t); return { ...t, b, wind: windOf(b) }; });
-const chatData = {
-  trips: trips.map((t) => ({ id: t.id, slug: t.slug, en: t.en, ga: t.ga, via: t.via, county: t.county, mins: t.mins, drive: t.drive, km: t.km, wind: t.wind, tags: t.tags, best: t.best, desc: t.desc, blurb: (t.lede.match(/^.*?[.!?](\s|$)/) || [t.desc])[0].trim(), counties: t.counties, words: t.words, stops: t.stops.filter((x) => !x.home).map((x) => x.n) })),
-  eat: Object.fromEntries(Object.entries(RESTAURANTS).map(([k, v]) => [k, v.map((x) => ({ name: x.name, town: x.town, type: x.type, cuisine: x.cuisine, near: x.near, note: x.note, map: mapsSearch(x), url: x.url || '', featured: !!x.featured }))])),
-};
+const chatData = plannerData();
 {
   const json = JSON.stringify(chatData);
   const hash = crypto.createHash('sha1').update(json).digest('hex').slice(0, 10);
