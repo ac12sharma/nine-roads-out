@@ -36,6 +36,53 @@ Branch `launch`. The local server now gzips text files, as Cloudflare Pages does
 
 Every key page now meets the targets: mobile performance 90 or more, accessibility 100, SEO 100. The home page is the slowest (92), because its 98 KiB hero image downloads alongside the two preloaded fonts on a simulated slow phone connection.
 
+## Lighthouse CI (6 November 2026)
+
+The same budget CI applies (`lighthouserc.json`), run locally with `npx @lhci/cli@0.15.1 autorun`: three runs per page, assertions on the median run. **All assertions passed.**
+
+| Page | Performance (3 runs) | Accessibility | Best practices | SEO | Page weight (median) |
+| --- | --- | ---: | ---: | ---: | ---: |
+| `/` | 93, 91, 93 | 100 | 100 | 100 | 495 KiB |
+| `/glendalough/` | 99, 97, 98 | 100 | 100 | 100 | 232 KiB |
+| `/driving-guide/` | 100, 100, 64 | 100 | 100 | 100 | 143 KiB |
+| `/car-hire-dublin/` | 99, 75, 100 | 100 | 100 | 100 | 143 KiB |
+| `/day-trips-from-dublin-without-a-car/` | 99, 100, 100 | 100 | 100 | 100 | 142 KiB |
+| `/coastal-drives-from-dublin/` | 99, 98, 99 | 100 | 100 | 100 | 359 KiB |
+
+Two runs (64 and 75) were far below the others. Other work was running on the same machine at the time, so these are most likely measurement noise rather than the pages. That is why the budget uses the median of three runs. GitHub's runners are shared too, so expect the same occasional outlier there.
+
+## Page weight, every page (6 November 2026)
+
+Measured with `node scripts/page-weight.mjs`: Chromium at 390 px wide and 3x density (an iPhone-class phone), gzip on, until the network goes quiet. Bytes are transferred bytes, including headers. Lighthouse's numbers above are lower for the home page because its phone has 2.6x density, so it picks smaller card images.
+
+| Page | Requests | Total KiB | HTML | CSS | JS | Fonts | Images |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| `/` | 16 | 711 | 6 | 10 | 31 | 121 | 543 |
+| `/glendalough/` | 8 | 231 | 6 | 10 | 31 | 121 | 63 |
+| `/boyne/` | 8 | 231 | 6 | 10 | 31 | 121 | 63 |
+| `/cooley/` | 8 | 236 | 6 | 10 | 31 | 121 | 69 |
+| `/loughcrew/` | 9 | 254 | 5 | 10 | 31 | 121 | 86 |
+| `/slievebloom/` | 9 | 248 | 6 | 10 | 31 | 121 | 81 |
+| `/leinster/` | 9 | 280 | 5 | 10 | 31 | 121 | 113 |
+| `/cashel/` | 8 | 229 | 6 | 10 | 31 | 121 | 61 |
+| `/copper/` | 8 | 230 | 6 | 10 | 31 | 121 | 63 |
+| `/hook/` | 8 | 187 | 6 | 10 | 31 | 121 | 20 |
+| `/coastal-drives-from-dublin/` | 13 | 418 | 4 | 10 | 31 | 121 | 253 |
+| `/mountain-drives-from-dublin/` | 12 | 434 | 4 | 10 | 31 | 121 | 268 |
+| `/historic-day-trips-from-dublin/` | 12 | 435 | 4 | 10 | 31 | 121 | 268 |
+| `/short-drives-from-dublin/` | 11 | 411 | 4 | 10 | 31 | 121 | 245 |
+| `/car-hire-dublin/` | 6 | 142 | 4 | 10 | 31 | 97 | 0 |
+| `/day-trips-from-dublin-without-a-car/` | 6 | 141 | 4 | 10 | 31 | 97 | 0 |
+| `/how-much-of-ireland/` | 7 | 172 | 10 | 10 | 31 | 121 | 0 |
+| `/driving-guide/` | 6 | 142 | 5 | 10 | 31 | 97 | 0 |
+| `/about/` | 6 | 141 | 3 | 10 | 31 | 97 | 0 |
+| `/advertise/` | 6 | 140 | 3 | 10 | 31 | 97 | 0 |
+| `/contact/` | 6 | 140 | 2 | 10 | 31 | 97 | 0 |
+| `/privacy/` | 6 | 141 | 3 | 10 | 31 | 97 | 0 |
+| `/terms/` | 6 | 140 | 3 | 10 | 31 | 97 | 0 |
+
+Fonts are the largest fixed cost on pages without photos (97 to 121 KiB). The home and theme pages are mostly drive-card images. At 3x density the browser picks the 960 px cards, and lazy cards close to the first screen load straight away.
+
 ## Baseline 2: the launch-prep version (4 November 2026, before any fixes)
 
 Commit `7c9b371` ("Launch prep: guides, theme pages, newsletter and featured listings"), 24 pages. Single runs. The local server did **not** compress, so the text-compression and cache audits failed here when they would pass in production.
@@ -92,6 +139,8 @@ Measured with `node scripts/audit-pages.mjs`: every page in the sitemap plus the
 | 4 Nov 2026 | Original (17 pages) | 36 | 32 | All `color-contrast`: `--ink-3` (#69756E) was 4.1:1 on the page background. Faded out-of-range rows on the home page were 2.4:1. |
 | 4 Nov 2026 | Launch prep (24 pages) | 50 | 46 | Same two causes, now also on the theme pages and car hire guide. |
 | 4 Nov 2026 | After fixes | 51 | 0 | `--ink-3` is #5C6861 (5.0:1 on the page, 5.5:1 on cards). Includes the new planner and map keyboard checks. |
+| 6 Nov 2026 | Added 320 px (WCAG reflow width) | 75 | 0 | 24 pages plus the 404 at 320, 390 and 1280 px. |
+| 6 Nov 2026 | Dark colour scheme (`--dark`) | 75 | 0 | First check of dark mode. |
 
 ## External links
 
@@ -105,9 +154,12 @@ Measured with `node scripts/check-links.mjs`. Google Maps and WhatsApp share lin
 
 The broken link was the Copper Coast Geopark page on visitwaterford.com (404). It now points to the Geopark's own site, coppercoastgeopark.com. The three blocked links are GetYourGuide searches, which answer automated requests with 403. The moved link was dataprotection.ie redirecting to `/en`; the site now links there directly, and the result above was measured before that change.
 
+## Trip planner accuracy
+
+121 of 124 questions answered correctly (97.6%): 96 of 96 on the tuning set and 25 of 28 on the held-out set. The baseline before the parser fixes was 90 of 96. Method and details: [planner-eval.md](planner-eval.md).
+
 ## Still to measure
 
-- Total page weight for every page, not just the six above.
+- The CI workflow on GitHub's runners: it has only been run locally so far, because nothing is pushed yet.
 - Lighthouse on the live site after deployment, with Cloudflare's own compression and caching.
-- Trip planner accuracy on the evaluation set (Phase 2).
 - Real-user Core Web Vitals and traffic: to measure after launch.

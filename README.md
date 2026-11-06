@@ -1,10 +1,14 @@
 # Nine Roads Out
 
+<!-- CI badge: replace OWNER/REPO with the GitHub repository once it exists, then uncomment.
+[![CI](https://github.com/OWNER/REPO/actions/workflows/ci.yml/badge.svg)](https://github.com/OWNER/REPO/actions/workflows/ci.yml)
+-->
+
 The most beautiful day drives from Dublin, as a fast static website that is ready for ads and affiliate links.
 
 - 24 pages: home, nine drive pages, four theme pages (coastal, mountain, historic and short drives), a car hire guide, a no-car guide, Your Ireland, a driving guide, About, Advertise, Contact, Privacy and cookies, Terms, and a 404 page.
 - A trip planner chat on every page ("Where do you want to go?") that suggests drives by scenery, drive time or place, and finds places to eat by type and cuisine. It runs in the visitor's browser from the site's own data, so it costs nothing to run. You can optionally let it pass harder questions to Claude.
-- Places to eat on every drive (31 cafés, pubs, restaurants and fine dining rooms), with filters for type and cuisine.
+- Places to eat on every drive (30 cafés, pubs, restaurants and fine dining rooms), with filters for type and cuisine.
 - Traveller levels: visitors tick off drives and tap counties on a map of Ireland to see what percentage of the Republic's 26 counties they've driven, and whether they're a Level 1, 2 or 3 traveller. Progress is saved only in their own browser, and results can be shared.
 - Every page is plain HTML generated at build time, so it loads fast, ranks well and works without JavaScript.
 - Search-ready: unique titles and descriptions, canonical links, share cards (Open Graph images) for every drive, structured data (TouristTrip, ItemList, BreadcrumbList, Article), `sitemap.xml` and `robots.txt`.
@@ -21,6 +25,23 @@ You need Node 18 or newer. There are no runtime dependencies.
 | `npm run build` | Builds the site into `dist/`. Deploy this folder. |
 | `npm run preview` | Builds a copy into `preview/` with relative links and visible ad placeholders. |
 | `npm run images` | Re-renders the scene pictures, share cards and icons (needs `npm i` and `npx playwright install chromium` first). |
+
+### Checks
+
+Install the dev tools once with `npm ci`, plus `npx playwright install chromium` for the browser checks. CI runs all of these on every push (see `.github/workflows/ci.yml`).
+
+| Command | What it checks |
+| --- | --- |
+| `npm test` | Content validation, level maths, the built site's links, ids and sitemap, and the trip planner evaluation (fails under 90% correct). |
+| `npm run eval` | Just the planner evaluation, listing every wrong answer. See [docs/planner-eval.md](docs/planner-eval.md). |
+| `npm run typecheck` | `tsc --checkJs` over the JavaScript, with strict mode for `src/shared/`. |
+| `npm run validate-html` | Every built page against html-validate's recommended rules (run `npm run build` first). |
+| `npm run audit` | Every page in Chromium at 320, 390 and 1280 px: axe-core WCAG 2.2 AA, console errors, overflow, keyboard traps, the planner and map keyboard behaviour. Add `--dark` for the dark colour scheme. |
+| `npm run lighthouse` | Lighthouse on six key pages, median of three runs. CI uses `lighthouserc.json`, which fails under 90 for mobile performance and 95 for accessibility, best practices and SEO. |
+| `npm run page-weight` | Bytes and requests for every page as a phone loads it. |
+| `npm run check-links` | Every external link (CI runs it weekly, as other sites go down). |
+
+Results and history are in [docs/metrics.md](docs/metrics.md) and [docs/accessibility.md](docs/accessibility.md).
 
 ## Where things live
 
