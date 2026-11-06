@@ -1,6 +1,8 @@
 // The trip planner evaluation set: questions people might type, and what a good answer contains.
 // Expected answers come from the site's data (src/content/), not from what the planner happens to say.
-// Written before tuning the parser; see docs/planner-eval.md for the baseline and what changed.
+// CASES was written before tuning the parser, and the parser was then fixed where it failed. HOLDOUT was
+// written after those fixes and is never tuned against, so its score is the fairer estimate of how the
+// planner does on questions nobody has seen. See docs/planner-eval.md.
 //
 // Each case:
 //   q        the question
@@ -129,4 +131,37 @@ export const CASES = [
   { q: 'how much of Ireland have I driven', kind: 'level' },
   { q: "what's the best hotel in Kilkenny", kind: 'fallback' },
   { q: 'is it open on Mondays', kind: 'fallback' },
+];
+
+// Written after the parser fixes of November 2026. Don't change the parser to pass these: add a new
+// case to CASES instead, and leave this set as it is.
+export const HOLDOUT = [
+  { q: 'somewhere with a lighthouse', kind: 'one', cards: ['hook'] },
+  { q: 'day trip to the seaside under 90 mins', kind: 'drives', cards: ['cooley'] },
+  { q: 'what is there to do near Dungarvan', kind: 'one', cards: ['copper'] },
+  { q: 'Waterford coast', kind: 'one', cards: ['copper'] },
+  { q: 'I love old ruins and abbeys', kind: 'drives', tag: 'heritage' },
+  { q: 'nice lunch spot in Laragh', kind: 'food', eatOn: ['glendalough'] },
+  { q: 'is there a pub near the Hill of Tara', kind: 'food', eats: ['Monasterboice Inn'] },
+  { q: 'where to get cake in Birr', kind: 'food', eats: ['The Loft Café'] },
+  { q: 'italian restaurant', kind: 'food-none' },
+  { q: 'can I bring my dog', kind: 'fallback' },
+  { q: 'how fast can I drive on a national road', kind: 'topic-speed' },
+  { q: 'when does it get dark', kind: 'topic-daylight' },
+  { q: 'do I need an international driving permit', kind: 'topic-car' },
+  { q: 'shortest drive', kind: 'drives', first: 'glendalough' },
+  { q: 'cliffs', kind: 'drives', cards: ['cooley', 'copper', 'hook'] },
+  { q: 'mountain drive under 2 hours', kind: 'drives', cards: ['glendalough', 'cooley', 'slievebloom'] },
+  { q: 'heritage sites in Tipperary', kind: 'one', cards: ['cashel'] },
+  { q: 'Newgrange and lunch', kind: 'food', eatOn: ['boyne'] },
+  { q: 'something in Carlow', kind: 'one', cards: ['leinster'] },
+  { q: 'good views', kind: 'drives', tag: 'mountains' },
+  { q: 'coastal drive with a castle', kind: 'drives', first: 'hook' },
+  { q: 'where can we stay the night', kind: 'fallback' },
+  { q: 'how long does Hook Head take', kind: 'one', cards: ['hook'] },
+  { q: 'any breweries?', kind: 'fallback' },
+  { before: ['The coast'], q: 'which one is closest', kind: 'drives', first: 'cooley' },
+  { q: 'speed cameras', kind: 'topic-speed' },
+  { q: 'brunch in Slane', kind: 'food', eatType: 'Café', eatOn: ['boyne'] },
+  { q: 'things to do with kids', kind: 'fallback' },
 ];

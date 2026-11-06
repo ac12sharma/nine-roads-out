@@ -7,7 +7,7 @@ import assert from 'node:assert/strict';
 import { plannerData } from '../src/data.mjs';
 import { newContext, greeting, reply } from '../src/shared/planner.mjs';
 import { statsOf, normalise } from '../src/shared/levels.mjs';
-import { CASES } from './planner-cases.mjs';
+import { CASES, HOLDOUT } from './planner-cases.mjs';
 
 export const THRESHOLD = 0.9;
 
@@ -22,7 +22,7 @@ const env = {
 
 /**
  * Asks one case's question (after any earlier questions) and lists what's wrong with the answer.
- * @param {typeof CASES[number]} c
+ * @param {typeof CASES[number] & { eats?: string[], eatType?: string, eatOn?: string[], says?: string, cards?: string[], first?: string, tag?: string, page?: string, before?: string[] }} c
  */
 export function evaluate(c) {
   const ctx = newContext();
@@ -43,12 +43,19 @@ export function evaluate(c) {
   return { case: c, reply: r, problems };
 }
 
-test(`trip planner answers at least ${THRESHOLD * 100}% of the evaluation set correctly`, (t) => {
-  assert.ok(CASES.length >= 60, 'the evaluation set needs at least 60 questions');
-  const results = CASES.map(evaluate);
+/** @param {import('node:test').TestContext} t @param {string} name @param {typeof CASES} cases */
+function score(t, name, cases) {
+  const results = cases.map(evaluate);
   const wrong = results.filter((x) => x.problems.length);
-  const accuracy = (results.length - wrong.length) / results.length;
-  t.diagnostic(`${results.length - wrong.length} of ${results.length} correct (${(accuracy * 100).toFixed(1)}%)`);
-  for (const w of wrong) t.diagnostic(`✗ ${w.case.before ? w.case.before.join(' → ') + ' → ' : ''}"${w.case.q}"${w.case.page ? ` on ${w.case.page}` : ''}: ${w.problems.join('; ')}`);
+  t.diagnostic(`${name}: ${results.length - wrong.length} of ${results.length} correct (${((results.length - wrong.length) / results.length * 100).toFixed(1)}%)`);
+  for (const w of wrong) t.diagnostic(`  ✗ ${w.case.before ? w.case.before.join(' → ') + ' → ' : ''}"${w.case.q}"${w.case.page ? ` on ${w.case.page}` : ''}: ${w.problems.join('; ')}`);
+  return results.length - wrong.length;
+}
+
+test(`trip planner answers at least ${THRESHOLD * 100}% of the evaluation questions correctly`, (t) => {
+  assert.ok(CASES.length + HOLDOUT.length >= 60, 'the evaluation set needs at least 60 questions');
+  const right = score(t, 'tuning set', CASES) + score(t, 'held-out set', HOLDOUT);
+  const total = CASES.length + HOLDOUT.length, accuracy = right / total;
+  t.diagnostic(`overall: ${right} of ${total} (${(accuracy * 100).toFixed(1)}%)`);
   assert.ok(accuracy >= THRESHOLD, `accuracy ${(accuracy * 100).toFixed(1)}% is below ${THRESHOLD * 100}%`);
 });
