@@ -1,6 +1,7 @@
 node_modules/
 dist/
 preview/
+.lighthouseci/
 .DS_Store
 functions/
 
