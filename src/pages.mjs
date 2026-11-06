@@ -283,7 +283,7 @@ ${daylightBlock()}
     const more = [1, 2, 3].map((k) => trips[(i + k) % trips.length]);
     const stops = t.stops.filter((s) => !s.home);
     const shareText = `${t.en}: a day drive from Dublin`;
-    const route = `<li class="stop start"><h3>Dublin city centre</h3></li>` + t.stops.map((s) => `<li class="leg" aria-label="Road: ${esc(s.road.replace(/~/g, ''))}">${roadChips(s.road)}</li><li class="stop${s.home ? ' home' : ''}"><h3>${esc(s.n)}</h3><p>${esc(s.t)}</p></li>`).join('');
+    const route = `<li class="stop start"><h3>Dublin city centre</h3></li>` + t.stops.map((s) => `<li class="leg"><span class="sr">Road: </span>${roadChips(s.road)}</li><li class="stop${s.home ? ' home' : ''}"><h3>${esc(s.n)}</h3><p>${esc(s.t)}</p></li>`).join('');
     const body = `
 <nav class="wrap crumbs" aria-label="Breadcrumb"><ol><li><a href="${u('/')}">Home</a></li><li><a href="${u('/#drives')}">Drives</a></li><li aria-current="page">${esc(t.en)}</li></ol></nav>
 <article class="trip">
@@ -309,7 +309,7 @@ ${adSlot('inArticle')}
 <h2 class="sec-h">The route</h2>
 <ol class="route">${route}</ol>
 ${photoGallery(t, u)}
-<aside class="know"><h2 class="know-tag">Know before you go</h2><ul>${t.know.map((k) => `<li>${esc(k)}</li>`).join('')}</ul><p class="official">${t.links.map((l) => `<a href="${esc(l[1])}" target="_blank" rel="noopener">${esc(l[0])}</a>`).join('')}</p></aside>
+<aside class="know" aria-labelledby="know-${t.id}"><h2 class="know-tag" id="know-${t.id}">Know before you go</h2><ul>${t.know.map((k) => `<li>${esc(k)}</li>`).join('')}</ul><p class="official">${t.links.map((l) => `<a href="${esc(l[1])}" target="_blank" rel="noopener">${esc(l[0])}</a>`).join('')}</p></aside>
 ${eatSection(t)}
 <p class="th-links"><span>More like this:</span>${themeLinks(t, u)}</p>
 ${newsletter('trip', u)}

@@ -40,6 +40,8 @@ Automated tools find roughly a third to a half of accessibility problems. The re
 | Out-of-range drives on the home page faded to 40% opacity, 2.4:1 | 1.4.3 Contrast | Muted with the grey text colour instead, plus hidden text for screen readers |
 | On phones, Tab could leave the full-screen planner and reach links hidden behind it | 2.4.3 Focus Order | The rest of the page is `inert` while the planner covers it |
 | The county map took 26 Tab presses to get past | 2.1.1 Keyboard (usability) | One Tab stop with arrow-key movement |
+| Each road on a drive's route was named only by an `aria-label` on a list item, which many screen readers ignore | 1.3.1 Info and Relationships | Visible road chip plus hidden "Road:" text |
+| The "Know before you go" box was an unnamed `aside` landmark, one of two on each drive page | 1.3.1, 2.4.1 | Named by its heading |
 
 axe violations: 46 across 50 page views before the fixes, 0 after. See [metrics.md](metrics.md#accessibility-axe-core-4-wcag-22-aa--best-practice) for the history.
 
