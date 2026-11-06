@@ -1,7 +1,8 @@
 // Opens every built page in Chromium at phone and desktop widths and reports real problems:
 // console errors, failed requests, horizontal overflow, images without alt, broken internal links,
-// axe-core WCAG 2.2 AA violations and keyboard focus traps.
-//   npm run build && node scripts/audit-pages.mjs [--shots dir] [--json file]
+// axe-core WCAG 2.2 AA violations and keyboard focus traps. 320px is the width WCAG's reflow
+// criterion (1.4.10) uses; --dark repeats everything with the dark colour scheme.
+//   npm run build && node scripts/audit-pages.mjs [--dark] [--shots dir] [--json file]
 import fs from 'node:fs';
 import path from 'node:path';
 import { createRequire } from 'node:module';
@@ -11,9 +12,9 @@ import { serve } from './serve.mjs';
 const require = createRequire(import.meta.url);
 const AXE = fs.readFileSync(require.resolve('axe-core/axe.min.js'), 'utf8');
 const arg = (k) => { const i = process.argv.indexOf(k); return i > -1 ? process.argv[i + 1] : null; };
-const shots = arg('--shots'), jsonOut = arg('--json');
+const shots = arg('--shots'), jsonOut = arg('--json'), scheme = process.argv.includes('--dark') ? 'dark' : 'light';
 const DIST = 'dist', PORT = 4173, BASE = `http://127.0.0.1:${PORT}`;
-const WIDTHS = [{ name: 'mobile', width: 390, height: 844 }, { name: 'desktop', width: 1280, height: 800 }];
+const WIDTHS = [{ name: 'small', width: 320, height: 640 }, { name: 'mobile', width: 390, height: 844 }, { name: 'desktop', width: 1280, height: 800 }];
 
 const pages = [...fs.readFileSync(path.join(DIST, 'sitemap.xml'), 'utf8').matchAll(/<loc>[^<]*?\.com(\/[^<]*)<\/loc>/g)].map((m) => m[1]);
 pages.push('/404.html');
@@ -32,7 +33,7 @@ const report = [];
 if (shots) fs.mkdirSync(shots, { recursive: true });
 
 for (const vp of WIDTHS) {
-  const ctx = await browser.newContext({ viewport: { width: vp.width, height: vp.height } });
+  const ctx = await browser.newContext({ viewport: { width: vp.width, height: vp.height }, colorScheme: scheme });
   for (const p of pages) {
     const page = await ctx.newPage();
     const issues = [];
@@ -85,15 +86,15 @@ for (const vp of WIDTHS) {
     const hiddenFocus = [...new Set(seen.filter((f) => !f.visible).map((f) => f.id))];
     if (hiddenFocus.length) issues.push({ kind: 'focus-on-invisible', detail: hiddenFocus });
 
-    if (shots) await page.screenshot({ path: path.join(shots, `${vp.name}${p.replace(/\//g, '_') || '_home'}.png`), fullPage: true });
-    report.push({ page: p, viewport: vp.name, title: dom.title, issues });
+    if (shots) await page.screenshot({ path: path.join(shots, `${vp.name}${scheme === 'dark' ? '-dark' : ''}${p.replace(/\//g, '_') || '_home'}.png`), fullPage: true });
+    report.push({ page: p, viewport: vp.name + (scheme === 'dark' ? ' (dark)' : ''), title: dom.title, issues });
     await page.close();
   }
   await ctx.close();
 }
 
 // Planner focus management, checked once per width on the home page.
-for (const vp of WIDTHS) {
+for (const vp of WIDTHS.slice(1)) {
   const page = await browser.newPage({ viewport: { width: vp.width, height: vp.height } });
   await page.goto(BASE + '/', { waitUntil: 'networkidle' });
   await page.click('.pl-launch');
