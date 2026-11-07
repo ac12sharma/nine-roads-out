@@ -193,10 +193,29 @@ ${r.featured ? '<p class="eat-feat">Featured partner</p>' : ''}<div class="eat-t
 <p class="dl-advice" id="dl-advice">Allow about three hours for stops on top of the driving time.</p></div>`;
   }
 
+  /** "Photo: author, licence, via Wikimedia Commons", linked to the source page and the licence. */
+  function photoCredit(/** @type {{ credit?: string, licence?: string, licenceUrl?: string, source?: string }} */ p) {
+    if (!p.credit) return '';
+    const who = p.source ? `<a href="${esc(p.source)}" target="_blank" rel="noopener">${esc(p.credit)}</a>` : esc(p.credit);
+    if (!p.licence) return ` <span class="ph-credit">Photo: ${who}</span>`;
+    const lic = p.licenceUrl ? `<a href="${esc(p.licenceUrl)}" target="_blank" rel="noopener license">${esc(p.licence)}</a>` : esc(p.licence.toLowerCase());
+    const changed = /^CC BY/.test(p.licence) ? ', resized' : '';
+    return ` <span class="ph-credit">Photo: ${who}, ${lic}${changed}${/commons\.wikimedia\.org/.test(p.source || '') ? ', via Wikimedia Commons' : ''}</span>`;
+  }
+
+  /** The "Image credits" section on the About page: every photo not taken for the site, with its licence. */
+  function imageCredits(/** @type {(p: string) => string} */ u) {
+    const rows = trips.flatMap((t) => (photos[t.id] || []).filter((p) => p.licence).map((p) => `<li><a href="${u(tripPath(t))}">${esc(t.en)}</a>: ${esc(p.caption || p.alt)}.${photoCredit(p).replace(' <span class="ph-credit">', ' ').replace(/<\/span>$/, '')}</li>`));
+    if (!rows.length) return '';
+    return `<h2 id="image-credits">Image credits</h2><p>The photos on the drive pages are from Wikimedia Commons, used under their CC0, CC BY or public domain terms. Each is credited under the photo, and listed here.</p><ul class="credits">${rows.join('')}</ul>`;
+  }
+
   function photoGallery(t, u) {
     const list = photos[t.id] || [];
     if (!list.length) return '';
-    return `<section class="photos" aria-labelledby="ph-${t.id}"><h2 class="sec-h" id="ph-${t.id}">On the road</h2><div class="ph-grid">${list.map((p, k) => `<figure class="ph${k === 0 && list.length !== 2 ? ' ph-wide' : ''}"><img src="${u('/photos/' + p.file)}" width="${p.w}" height="${p.h}" alt="${esc(p.alt)}" loading="lazy" decoding="async">${p.caption || p.credit ? `<figcaption>${esc(p.caption || '')}${p.credit ? ` <span class="ph-credit">Photo: ${esc(p.credit)}</span>` : ''}</figcaption>` : ''}</figure>`).join('')}</div></section>`;
+    const wide = (/** @type {number} */ k) => k === 0 && list.length !== 2;
+    const img = (/** @type {any} */ p, /** @type {number} */ k) => `<img src="${u('/photos/' + p.file)}"${p.small ? ` srcset="${u('/photos/' + p.small)} 800w, ${u('/photos/' + p.file)} 1600w" sizes="${wide(k) || list.length === 1 ? '(max-width: 760px) 100vw, 760px' : '(max-width: 760px) 100vw, 380px'}"` : ''} width="${p.w}" height="${p.h}" alt="${esc(p.alt)}" loading="lazy" decoding="async">`;
+    return `<section class="photos" aria-labelledby="ph-${t.id}"><h2 class="sec-h" id="ph-${t.id}">Photos</h2><div class="ph-grid">${list.map((p, k) => `<figure class="ph${wide(k) ? ' ph-wide' : ''}">${img(p, k)}${p.caption || p.credit ? `<figcaption>${esc(p.caption || '')}${photoCredit(p)}</figcaption>` : ''}</figure>`).join('')}</div></section>`;
   }
 
   /* ---------- home ---------- */
@@ -472,7 +491,8 @@ ${adSlot('guide')}
 <p>The site is free to use. It is paid for by ${adsOn ? 'advertising, by ' : ''}affiliate links to car hire, places to stay and tours, and by featured listings.${adsOn ? '' : ' It does not show ads at the moment.'} If you book through an affiliate link, the site may earn a commission at no extra cost to you.</p>
 <p>Featured listings are paid placements for businesses on the routes, and they are always labelled. Nobody can pay to have a drive included, to change what we say about a place, or to remove an independent listing. <a href="${u('/advertise/')}">How advertising works</a>.</p>
 <h2>The pictures</h2>
-<p>The scenes are illustrations drawn in code, in the spirit of the old Irish railway and tourism posters. Each one shows the drive's signature view, from the round tower at Glendalough to the lighthouse at Hook Head.</p>`,
+<p>The scenes are illustrations drawn in code, in the spirit of the old Irish railway and tourism posters. Each one shows the drive's signature view, from the round tower at Glendalough to the lighthouse at Hook Head.</p>
+${imageCredits(u)}`,
     });
   }
 

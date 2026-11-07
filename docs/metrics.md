@@ -129,6 +129,7 @@ Measured on the launch-prep version, mobile, one change set at a time.
 | Local server gzips text, as Cloudflare does | HTML and CSS transfer about 70% smaller (site CSS 35 KB → 10 KB) |
 | Fonts, canvas, preload and gzip together | Home 59 → 87, Glendalough 85 → 99 (single runs) |
 | 720 px card images with `srcset`; home cards all lazy (they sit below the hero) | Home 87 → 92 (median of 3); home mobile page weight 646 → 491 KiB |
+| Photo galleries on seven drive pages (12 Wikimedia Commons photos, 1600 px and 800 px WebP, lazy-loaded), 7 November 2026 | `/glendalough/` mobile 99 → 97 and 228 → 459 KiB; `/cashel/` mobile 97, 379 KiB; `/copper/` mobile 98, 308 KiB; desktop 100 on all three (median of 3). Still within the budget. |
 
 ## Accessibility (axe-core 4, WCAG 2.2 AA + best practice)
 

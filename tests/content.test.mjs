@@ -100,7 +100,14 @@ test('every listed photo exists and has alt text', () => {
     assert.ok(IDS.includes(id), `photos listed under unknown drive "${id}"`);
     for (const p of list) {
       assert.ok(fs.existsSync(new URL(`../public/photos/${p.file}`, import.meta.url)), `missing public/photos/${p.file}`);
-      assert.ok(nonEmpty(p.alt), `${p.file}: alt text is missing`);
+      assert.ok(nonEmpty(p.alt) && p.alt.length >= 30, `${p.file}: alt text should describe the photo`);
+      if (p.small) assert.ok(fs.existsSync(new URL(`../public/photos/${p.small}`, import.meta.url)), `missing public/photos/${p.small}`);
+      if (p.licence) {
+        assert.match(p.licence, /^(CC0|CC BY \d\.\d|Public domain)$/, `${p.file}: only CC0, CC BY and public domain photos are allowed, not ${p.licence}`);
+        assert.ok(nonEmpty(p.credit), `${p.file}: a licensed photo needs its photographer's credit`);
+        assert.match(p.source || '', /^https:\/\//, `${p.file}: a licensed photo needs the page it came from`);
+        if (p.licence !== 'Public domain') assert.match(p.licenceUrl || '', /^https:\/\/creativecommons\.org\//, `${p.file}: link the licence`);
+      }
     }
   }
 });

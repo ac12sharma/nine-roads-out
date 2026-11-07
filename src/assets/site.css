@@ -522,7 +522,7 @@ h1,h2,h3{text-wrap:balance}
 .ph-wide{grid-column:1/-1}
 .ph img{display:block;width:100%;height:auto;background:var(--surface)}
 .ph figcaption{margin-top:6px;font:500 13.5px/1.4 var(--display);color:var(--ink-2)}
-.ph-credit{color:var(--ink-3)}
+.ph-credit{display:block;margin-top:2px;color:var(--ink-3);font-size:13px}.ph-credit a{color:inherit;text-decoration:underline;text-underline-offset:2px}
 
 /* newsletter */
 .news{margin-top:clamp(40px,6vw,64px)}

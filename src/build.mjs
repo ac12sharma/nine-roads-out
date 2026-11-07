@@ -78,6 +78,7 @@ for (const [id, list] of Object.entries(PHOTOS)) {
   photos[id] = list.map((p) => {
     const f = path.join(root, 'public/photos', p.file);
     if (!fs.existsSync(f)) throw new Error(`Photo listed in src/content/photos.mjs is missing: public/photos/${p.file}`);
+    if (p.small && !fs.existsSync(path.join(root, 'public/photos', p.small))) throw new Error(`Small copy listed in src/content/photos.mjs is missing: public/photos/${p.small}`);
     const [w, h] = imageSize(f);
     return { ...p, w, h };
   });
