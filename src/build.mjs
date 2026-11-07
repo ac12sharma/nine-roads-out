@@ -146,7 +146,8 @@ if (config.chat.ai && !preview) {
 const todo = [];
 if (!config.contactEmail) todo.push('Add contactEmail in site.config.mjs (AdSense reviewers look for a working contact route).');
 else todo.push(`Make sure ${config.contactEmail} reaches you (Cloudflare Email Routing, see README).`);
-if (!config.newsletter.action) todo.push('Optional: connect a newsletter provider (newsletter.action) to show the sign-up box.');
+if (config.newsletter.action && !/^https:\/\/buttondown\.com\/api\/emails\/embed-subscribe\/[\w-]+$/.test(config.newsletter.action)) console.warn(`Warning: newsletter.action doesn't look like a Buttondown form address (https://buttondown.com/api/emails/embed-subscribe/USERNAME). See docs/newsletter-setup.md.`);
+if (!config.newsletter.action) todo.push('Optional: paste your Buttondown form address into newsletter.action to show the sign-up box (docs/newsletter-setup.md).');
 if (!config.adsense.client) todo.push('Add your AdSense publisher ID (adsense.client) once your account is approved.');
 if (Object.values(config.affiliates).some((a) => !/[?&](aid|a_aid|partner_id|affiliate|ref)=/i.test(a.url))) todo.push('Swap the affiliate URLs for your tracked partner links.');
 console.log(`Built ${urls.length + 1} pages into ${path.relative(root, out)}/${preview ? ' (preview)' : ''}`);

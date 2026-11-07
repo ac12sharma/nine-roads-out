@@ -45,17 +45,16 @@ export default {
     tours: { partner: 'GetYourGuide', url: 'https://www.getyourguide.com/s/?q={q}' },
   },
 
-  // Newsletter sign-up, shown on the home page, every drive page and the theme pages.
-  // Create a free list with Buttondown, Kit (ConvertKit), Mailchimp or similar, find its embed
-  // form, and copy the form's action URL and the name of its email field here.
-  //   Buttondown: action 'https://buttondown.com/api/emails/embed-subscribe/YOURNAME', field 'email'
-  //   Kit:        action 'https://app.kit.com/forms/FORM_ID/subscriptions', field 'email_address'
-  //   Mailchimp:  action from the embed code (…list-manage.com/subscribe/post?u=…&id=…), field 'EMAIL'
-  // Leave action empty to hide the sign-up box.
+  // Newsletter sign-up with Buttondown, shown on the home page, every drive page and the theme pages.
+  // Step-by-step setup: docs/newsletter-setup.md. Paste your form address into `action`:
+  //   'https://buttondown.com/api/emails/embed-subscribe/YOUR-BUTTONDOWN-USERNAME'
+  // `field` and `hidden` already match Buttondown's embed form, so leave them as they are.
+  // While action is empty the sign-up box is hidden and the Privacy page doesn't mention a newsletter.
   newsletter: {
+    provider: 'Buttondown', // named on the Privacy page once the sign-up is live
     action: '',
     field: 'email',
-    hidden: {}, // any extra hidden fields the provider's embed code includes, as { name: 'value' }
+    hidden: { embed: '1' }, // Buttondown's embed form sends embed=1
     heading: 'One good drive a month',
     pitch: 'A drive for the season, closures worth knowing about and new places to eat on the way. Free, and at most once a month.',
   },

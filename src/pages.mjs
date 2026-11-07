@@ -41,10 +41,10 @@ export function createRenderer({ config, trips, assets, preview, restaurants, ir
     const hidden = Object.entries(N.hidden || {}).map(([k, v]) => `<input type="hidden" name="${esc(k)}" value="${esc(v)}">`).join('');
     return `<section class="news news-${where}" aria-labelledby="news-${where}"><div class="news-in">
 <div class="news-copy"><h2 id="news-${where}">${esc(N.heading)}</h2><p>${esc(N.pitch)}</p></div>
-<div class="news-act"><form class="news-form" action="${esc(N.action || '#')}" method="post" target="_blank"${demo ? ' data-demo' : ''}>
+<div class="news-act"><form class="news-form" action="${esc(N.action || '#')}" method="post"${demo ? ' data-demo' : ''}>
 <label class="sr" for="news-email-${where}">Email address</label><input id="news-email-${where}" type="email" name="${esc(N.field || 'email')}" required placeholder="Your email address" autocomplete="email">${hidden}
 <button class="btn" type="submit">Sign me up</button></form>
-<p class="news-small">No spam, unsubscribe any time. See the <a href="${u('/privacy/')}">privacy policy</a>.</p></div>
+<p class="news-small">You’ll get an email asking you to confirm. No spam, unsubscribe any time. See the <a href="${u('/privacy/')}">privacy policy</a>.</p></div>
 </div></section>`;
   }
 
@@ -533,7 +533,7 @@ ${imageCredits(u)}`,
 <li><strong>Your Ireland map.</strong> If you tick off drives or counties, that list is saved in your browser's local storage on your device so it is there next time. It is never sent to us, and clearing your browser data removes it.</li>
 </ul>
 ${config.newsletter && config.newsletter.action ? `<h2>Newsletter</h2>
-<p>If you sign up for the newsletter, your email address is stored by our newsletter provider and used only to send you the newsletter. You can unsubscribe at any time with the link in every email, and your address is then removed from the list. We rely on your consent for this.</p>
+<p>If you sign up for the newsletter, your email address is stored by ${config.newsletter.provider ? 'our newsletter provider, ' + esc(config.newsletter.provider) + ',' : 'our newsletter provider'} and used only to send you the newsletter. You will first get an email asking you to confirm, and you are only added once you do. You can unsubscribe at any time with the link in every email. To have your address deleted altogether, ${config.contactEmail ? `email <a href="mailto:${esc(config.contactEmail)}">${esc(config.contactEmail)}</a>` : 'contact us'}. We rely on your consent for this.</p>
 ` : ''}<h2>Trip planner</h2>
 <p>The trip planner answers questions about drives, places to eat and timing inside your browser, using the information on this site.${config.chat.ai ? ' Questions it cannot answer that way are sent to Anthropic, the company that provides the AI model behind it, to generate a reply. Please do not type personal details into it.' : ' What you type is not sent anywhere.'}</p>
 <h2>Advertising</h2>
