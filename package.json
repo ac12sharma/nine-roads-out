@@ -19,7 +19,8 @@
     "typecheck": "tsc -p . && tsc -p tsconfig.strict.json",
     "validate-html": "html-validate \"dist/**/*.html\"",
     "page-weight": "node scripts/page-weight.mjs",
-    "eval": "node --test tests/planner-eval.test.mjs"
+    "eval": "node --test tests/planner-eval.test.mjs",
+    "check-seo": "node scripts/check-seo.mjs"
   },
   "devDependencies": {
     "@types/node": "^24.10.1",

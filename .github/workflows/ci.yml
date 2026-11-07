@@ -1,5 +1,6 @@
 # Checks every push and pull request. Each job is a separate status on GitHub.
-#   check       type check, unit and content tests, planner evaluation, build, HTML validation
+#   check       type check, unit and content tests, planner evaluation, build, HTML validation,
+#               structured data and search metadata (scripts/check-seo.mjs)
 #   browser     axe-core accessibility and keyboard checks on every page at phone and desktop widths
 #   lighthouse  Lighthouse CI on six key pages, median of three runs, against the budget in lighthouserc.json
 #   links       external links, weekly and on demand (other people's sites go down; that shouldn't block a push)
@@ -37,6 +38,7 @@ jobs:
       - run: npm test
       - run: npm run build
       - run: npm run validate-html
+      - run: npm run check-seo
       - uses: actions/upload-artifact@v7
         with:
           name: dist
