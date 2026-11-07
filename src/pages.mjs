@@ -70,7 +70,7 @@ export function createRenderer({ config, trips, assets, preview, restaurants, ir
 <nav aria-label="Plan your trip"><h2>Plan your trip</h2><ul>${THEMES.map((th) => `<li><a href="${u('/' + th.slug + '/')}">${esc(th.nav)}</a></li>`).join('')}<li><a href="${u('/car-hire-dublin/')}">Hiring a car in Dublin</a></li><li><a href="${u('/day-trips-from-dublin-without-a-car/')}">No car? Tours and buses</a></li><li><a href="${u('/driving-guide/')}">Driving guide</a></li></ul></nav>
 <nav aria-label="This site"><h2>This site</h2><ul><li><a href="${u('/how-much-of-ireland/')}">Your Ireland map</a></li><li><a href="${u('/about/')}">About</a></li><li><a href="${u('/advertise/')}">Advertise with us</a></li><li><a href="${u('/contact/')}">Contact</a></li><li><a href="${u('/privacy/')}">Privacy and cookies</a></li><li><a href="${u('/terms/')}">Terms of use</a></li>${adsOn ? '<li><button type="button" class="linkish" data-consent>Cookie settings</button></li>' : ''}</ul></nav>
 </div>
-<div class="wrap foot-base"><p>Some links on this site are affiliate links. If you book through them, we may earn a commission at no extra cost to you.${adsOn ? ' Ads are served by Google.' : ''} Drive times are approximate. Details were last checked in ${esc(config.checked)}, but opening times and access change, so check official sites before you go.</p>
+<div class="wrap foot-base"><p>Some links on this site are affiliate links. If you book through them, we may earn a commission at no extra cost to you.${adsOn ? ' Ads are served by Google.' : ''} Drive times are approximate. Each drive page shows when its details were last checked, but opening times and access change, so check official sites before you go.</p>
 <p>© ${year} ${esc(config.name)}. Illustrations drawn in code.</p></div></footer>`;
   }
 
@@ -485,7 +485,7 @@ ${adSlot('guide')}
 <h2>How the drives are chosen</h2>
 <p>Each drive fits comfortably into a day from Dublin city centre, loops back rather than retracing its steps where it can, and has at least one stop worth the journey on its own. Between them they cover the bog passes of Wicklow, the passage tombs of the Boyne, the fjord at Carlingford, the Midland mountains and the coasts of Waterford and Wexford.</p>
 <h2>How the details are checked</h2>
-<p>Opening arrangements, closures, booking rules and parking are checked against official sources such as Heritage Ireland, the National Parks and Wildlife Service, Coillte and local tourism offices. Each drive page links to the sources that matter for it. Details were last checked in ${esc(config.checked)}.</p>
+<p>Opening arrangements, closures, booking rules and parking are checked against official sources such as Heritage Ireland, the National Parks and Wildlife Service, Coillte and local tourism offices. Each drive page links to the sources that matter for it and shows the date they were last checked, and the guides list their sources at the bottom.</p>
 <p>Things change. If you spot something out of date, please <a href="${u('/contact/')}">get in touch</a> and it will be fixed.</p>
 <h2>How the site is funded</h2>
 <p>The site is free to use. It is paid for by ${adsOn ? 'advertising, by ' : ''}affiliate links to car hire, places to stay and tours, and by featured listings.${adsOn ? '' : ' It does not show ads at the moment.'} If you book through an affiliate link, the site may earn a commission at no extra cost to you.</p>
@@ -517,10 +517,12 @@ ${imageCredits(u)}`,
     // Every statement below follows site.config.mjs, so the policy describes what the built site really does.
     const newsOn = !!(config.newsletter && config.newsletter.action);
     const cfToken = !!config.analytics.cloudflareToken;
-    const thirdParty = [adsOn && "Google's ad script", cfToken && "Cloudflare's analytics script"].filter(Boolean);
+    const cfOn = cfToken || !!config.analytics.cloudflareDashboard;
+    const eventsOn = !!config.analytics.events;
+    const thirdParty = [adsOn && "Google's ad script", cfOn && "Cloudflare's analytics script"].filter(Boolean);
     return prosePage({
       path: '/privacy/', related: ['/terms/', '/contact/', '/about/'], title: 'Privacy and cookies', h1: 'Privacy and cookies',
-      lede: `This policy explains what information this site collects, why, and the choices you have. Last updated ${esc(config.checked)}.`,
+      lede: `This policy explains what information this site collects, why, and the choices you have. Last updated ${esc(config.policiesUpdated)}.`,
       desc: 'How Nine Roads Out handles personal data, advertising cookies and affiliate links, and your rights under GDPR.',
       content: (u) => `
 <h2>Who is responsible</h2>
@@ -528,22 +530,22 @@ ${imageCredits(u)}`,
 <h2>What we collect</h2>
 <p>${config.newsletter && config.newsletter.action ? 'You do not need an account to use this site, and we only ask for your email address if you choose to sign up for the newsletter.' : 'You do not need an account to use this site and we do not ask for your name or email address.'} ${thirdParty.length ? `The fonts and images that make up the site are served from our own host. The exceptions are ${thirdParty.join(' and ')}, described below.` : 'The fonts, images and scripts that make up the site are served from our own host, so loading a page does not send your details to font or script services.'} This site does not set any cookies of its own.</p>
 <ul>
-<li><strong>Server logs.</strong> Our hosting provider records technical information such as IP address, browser type and the page requested, to keep the site secure and working. These logs are kept for a short period and are not used to identify you.</li>
-<li><strong>Analytics.</strong> We may use Cloudflare Web Analytics to count visits. It does not use cookies and does not track you across other sites.</li>${config.analytics.events ? `
+<li><strong>Hosting.</strong> Like any website, the site is delivered by a hosting provider, which has to process technical information such as your IP address and browser type to send you the pages and protect the site from abuse. We don't keep logs of visits ourselves.</li>
+${cfOn ? `<li><strong>Visit counts.</strong> We use Cloudflare Web Analytics to count visits to each page. Cloudflare says it does not use cookies or local storage, and does not fingerprint visitors by IP address or browser.</li>` : ''}${config.analytics.events ? `
 <li><strong>Clicks.</strong> When you click a booking link, open a route in Google Maps, download a route file, print a route card, share a page, tick off a drive or use the trip planner, your browser tells this site what kind of thing was clicked and on which page, for example "a car hire link on the Glendalough page". This goes to our own site, not to an analytics company. No cookie, identifier or IP address is stored with it, and nothing you type into the planner is sent. If your browser sends a Global Privacy Control or Do Not Track signal, nothing is sent at all. These records are kept for three months.</li>` : ''}
 <li><strong>Your Ireland map.</strong> If you tick off drives or counties, that list is saved in your browser's local storage on your device so it is there next time. It is never sent to us, and clearing your browser data removes it.</li>
 </ul>
 ${config.newsletter && config.newsletter.action ? `<h2>Newsletter</h2>
-<p>If you sign up for the newsletter, your email address is stored by ${config.newsletter.provider ? 'our newsletter provider, ' + esc(config.newsletter.provider) + ',' : 'our newsletter provider'} and used only to send you the newsletter. You will first get an email asking you to confirm, and you are only added once you do. You can unsubscribe at any time with the link in every email. To have your address deleted altogether, ${config.contactEmail ? `email <a href="mailto:${esc(config.contactEmail)}">${esc(config.contactEmail)}</a>` : 'contact us'}. We rely on your consent for this.</p>
+<p>If you sign up for the newsletter, your email address is stored by ${config.newsletter.provider ? 'our newsletter provider, ' + esc(config.newsletter.provider) + ',' : 'our newsletter provider'} and used only to send you the newsletter.${config.newsletter.provider === 'Buttondown' ? ' Buttondown processes it in the United States, under the European Commission’s Standard Contractual Clauses.' : ''} You will first get an email asking you to confirm, and you are only added once you do. You can unsubscribe at any time with the link in every email. To have your address deleted altogether, ${config.contactEmail ? `email <a href="mailto:${esc(config.contactEmail)}">${esc(config.contactEmail)}</a>` : 'contact us'}. We rely on your consent for this.</p>
 ` : ''}<h2>Trip planner</h2>
-<p>The trip planner answers questions about drives, places to eat and timing inside your browser, using the information on this site.${config.chat.ai ? ' Questions it cannot answer that way are sent to Anthropic, the company that provides the AI model behind it, to generate a reply. Please do not type personal details into it.' : ' What you type is not sent anywhere.'}</p>
+<p>The trip planner answers questions about drives, places to eat and timing inside your browser, using the information on this site.${config.chat.ai ? ' Questions it cannot answer that way are sent, with the last few messages of the conversation, to Anthropic, the company that provides the AI model behind it, to generate a reply. Please do not type personal details into it. To stop the AI answers being overused, the site counts how many each visitor asks, using a scrambled code made from your IP address and the date rather than the address itself; the counts are deleted after two days.' : ' What you type is not sent anywhere.'}</p>
 <h2>Advertising</h2>
 ${adsOn ? `<p>This site shows ads served by Google AdSense. If you are in the European Economic Area, the UK or Switzerland, you will be asked for your consent before any advertising cookies are set. With your consent, Google and its partners may use cookies to show ads based on your interests and to measure them. Without it, Google may still show limited, non-personalised ads.</p>
 <p>You can change your choice at any time with the Cookie settings link at the bottom of every page. Google explains how it uses information from sites like this one at <a href="https://policies.google.com/technologies/partner-sites" target="_blank" rel="noopener">policies.google.com</a>.</p>` : `<p>This site does not show ads at the moment, and no advertising cookies are set. If that changes, this policy will be updated before any ads appear, and visitors in the European Economic Area, the UK and Switzerland will be asked for consent before advertising cookies are used.</p>`}
-<h2>Affiliate links</h2>
-<p>Some links to car hire, accommodation and tour companies are affiliate links. When you follow one, that company may set its own cookies so it can credit us if you book. Their privacy policies apply on their sites.</p>
+<h2>Affiliate links and other sites</h2>
+<p>Some links to car hire, accommodation and tour companies are affiliate links, and featured listings for places to eat are paid placements. When you follow an affiliate link, that company may set its own cookies so it can credit us if you book. Links to Google Maps, WhatsApp and other sites take you to those services, and their own privacy policies apply there.</p>
 <h2>Legal basis</h2>
-<p>${[adsOn && 'advertising cookies', newsOn && 'the newsletter'].filter(Boolean).length ? `We rely on your consent for ${[adsOn && 'advertising cookies', newsOn && 'the newsletter'].filter(Boolean).join(' and ')}, and on` : 'We rely on'} our legitimate interest in running a secure, working website for server logs and cookieless analytics.</p>
+<p>${[adsOn && 'advertising cookies', newsOn && 'the newsletter'].filter(Boolean).length ? `We rely on your consent for ${[adsOn && 'advertising cookies', newsOn && 'the newsletter'].filter(Boolean).join(' and ')}, and on` : 'We rely on'} our legitimate interest in running a secure, working website${cfOn || eventsOn ? ' and understanding how it is used, without cookies,' : ''}${config.chat.ai ? ' and in preventing abuse of the trip planner' : ''}.</p>
 <h2>Your rights</h2>
 <p>Under the GDPR you can ask to access, correct or delete personal data we hold about you, object to how it is used, or withdraw consent. To do so, contact us as above. You also have the right to complain to the Data Protection Commission in Ireland at <a href="https://www.dataprotection.ie/en" target="_blank" rel="noopener">dataprotection.ie</a>.</p>
 <h2>Changes</h2>
@@ -554,19 +556,20 @@ ${adsOn ? `<p>This site shows ads served by Google AdSense. If you are in the Eu
   function terms() {
     return prosePage({
       path: '/terms/', related: ['/privacy/', '/contact/', '/about/'], title: 'Terms of use', h1: 'Terms of use',
-      lede: `By using ${esc(config.name)} you agree to these terms. Last updated ${esc(config.checked)}.`,
+      lede: `By using ${esc(config.name)} you agree to these terms. Last updated ${esc(config.policiesUpdated)}.`,
       desc: 'Terms of use for Nine Roads Out, including accuracy of information, safety, affiliate links and copyright.',
-      content: () => `
+      content: (u) => `
 <h2>Information only</h2>
 <p>The routes, drive times, opening arrangements and other details on this site are for general information. They are checked carefully, but conditions change. Always check official sources before you travel, especially for bookings, closures and weather.</p>
 <h2>Your safety</h2>
 <p>You are responsible for driving safely and legally. Follow road signs, speed limits and local rules, and do not use this site while driving. Some roads described here are narrow, steep or exposed. Decide for yourself whether a road is suitable for you, your vehicle and the conditions on the day.</p>
 <h2>Links to other sites</h2>
-<p>This site links to other websites, including official sources, maps and booking services. We are not responsible for their content or for any booking you make with them. Some links are affiliate links, which may earn us a commission at no extra cost to you.</p>
+<p>This site links to other websites, including official sources, maps and booking services. We are not responsible for their content or for any booking you make with them. Some links are affiliate links, which may earn us a commission at no extra cost to you, and featured listings are paid placements. Both are labelled where they appear.</p>
 <h2>Liability</h2>
 <p>To the extent the law allows, ${esc(config.name)} is not liable for any loss or damage arising from use of this site or reliance on its content. Nothing in these terms limits liability that cannot be limited under Irish law.</p>
 <h2>Copyright</h2>
 <p>The text and illustrations on this site belong to ${esc(config.owner.name)}. You are welcome to link to any page and share it. Please do not copy the content or illustrations for other websites without permission.</p>
+${trips.some((t) => (photos[t.id] || []).some((p) => p.licence)) ? `<p>Photos credited to other photographers belong to them and are used under the licence shown with each photo. They are listed under <a href="${u('/about/#image-credits')}">Image credits</a>.</p>\n` : ''}<p>The route files (GPX) contain positions from OpenStreetMap, © OpenStreetMap contributors, available under the <a href="https://opendatacommons.org/licenses/odbl/" target="_blank" rel="noopener">Open Database License</a>. The county map uses boundaries from Natural Earth, which are in the public domain.</p>
 <h2>Governing law</h2>
 <p>These terms are governed by the laws of Ireland.</p>`,
     });

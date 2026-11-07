@@ -33,11 +33,12 @@ export default {
   },
 
   // Cloudflare Web Analytics token (cookieless, so no consent banner needed for it).
-  // On Cloudflare Pages you can also switch it on in the dashboard and leave this empty.
+  // If you switch it on in the Cloudflare dashboard instead, leave the token empty and set
+  // cloudflareDashboard: true, so the Privacy page still says the site uses it.
   // events: true records clicks on booking links, GPX downloads, planner use and the like through
   // this site's own /api/event function, with no cookies or identifiers. It needs an Analytics Engine
   // binding called EVENTS on the Pages project. See docs/analytics.md before switching it on.
-  analytics: { cloudflareToken: '', events: false },
+  analytics: { cloudflareToken: '', cloudflareDashboard: false, events: false },
 
   // Affiliate links. Replace each URL with the tracked link from your partner dashboard.
   // `{q}` is replaced with the place name for that drive. Until you change them, these are
@@ -70,6 +71,7 @@ export default {
   // whole site per day. The daily limits need a KV binding called CHAT_LIMITS.
   chat: { ai: false, endpoint: '/api/chat', model: 'claude-haiku-5-5', limits: { perMinute: 5, perDay: 40, dailyCap: 500 } },
 
-  // Month the facts were last checked against official sources. Shown in the footer.
-  checked: 'October 2026',
+  // Month the Privacy and Terms pages were last changed. Update it whenever their text changes.
+  // (Each drive page shows its own "checked" date, from src/content/trips.mjs.)
+  policiesUpdated: 'November 2026',
 };
