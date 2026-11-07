@@ -4,6 +4,7 @@ import { FILTERS } from './content/trips.mjs';
 import { TYPES, mapsSearch } from './content/restaurants.mjs';
 import { THEMES, NOCAR } from './content/guides.mjs';
 import { TOTAL, levelFor, levelBands } from './shared/levels.mjs';
+import { FAQS } from './content/faqs.mjs';
 
 export function createRenderer({ config, trips, assets, preview, restaurants, irelandMap, photos = {} }) {
   const adsOn = !!config.adsense.client && !preview;
@@ -309,8 +310,9 @@ ${adSlot('inArticle')}
 <h2 class="sec-h">The route</h2>
 <ol class="route">${route}</ol>
 ${photoGallery(t, u)}
-<aside class="know" aria-labelledby="know-${t.id}"><h2 class="know-tag" id="know-${t.id}">Know before you go</h2><ul>${t.know.map((k) => `<li>${esc(k)}</li>`).join('')}</ul><p class="official">${t.links.map((l) => `<a href="${esc(l[1])}" target="_blank" rel="noopener">${esc(l[0])}</a>`).join('')}</p></aside>
+<aside class="know" aria-labelledby="know-${t.id}"><h2 class="know-tag" id="know-${t.id}">Know before you go</h2><ul>${t.know.map((k) => `<li>${esc(k)}</li>`).join('')}</ul><p class="official">${t.links.map((l) => `<a href="${esc(l[1])}" target="_blank" rel="noopener">${esc(l[0])}</a>`).join('')}</p><p class="checked">Checked against these official pages on <time datetime="${t.checked}">${longDate(t.checked)}</time>. Opening times and rules change, so check before you go.</p></aside>
 ${eatSection(t)}
+${faqSection(t.id)}
 <p class="th-links"><span>More like this:</span>${themeLinks(t, u)}</p>
 ${newsletter('trip', u)}
 <p class="print-only print-foot">${esc(abs(path).replace(/^https?:\/\//, ''))}. Drive times are approximate. Check opening times and road conditions before you set off.</p>
@@ -342,12 +344,33 @@ ${adSlot('footer', 'wrap')}
           itinerary: { '@type': 'ItemList', numberOfItems: stops.length, itemListElement: stops.map((s, k) => ({ '@type': 'ListItem', position: k + 1, item: { '@type': 'TouristAttraction', name: s.n, description: s.t } })) },
         },
         { '@context': 'https://schema.org', '@type': 'BreadcrumbList', itemListElement: [{ '@type': 'ListItem', position: 1, name: 'Home', item: abs('/') }, { '@type': 'ListItem', position: 2, name: t.en, item: abs(path) }] },
+        ...faqJsonld(t.id),
       ],
       body,
     });
   }
 
   /* ---------- prose pages ---------- */
+  const longDate = (/** @type {string} */ iso) => new Date(iso + 'T12:00:00Z').toLocaleDateString('en-IE', { day: 'numeric', month: 'long', year: 'numeric', timeZone: 'UTC' });
+  const plain = (/** @type {string} */ html) => html.replace(/<[^>]+>/g, '').replace(/&amp;/g, '&').replace(/&#39;/g, "'").replace(/&quot;/g, '"');
+
+  /** Visible questions and answers, each linking to the official page it comes from. */
+  function faqSection(/** @type {string} */ key, heading = 'Questions people ask') {
+    const list = FAQS[key];
+    if (!list) return '';
+    return `<section class="faq" aria-labelledby="faq-${key}"><h2 id="faq-${key}">${esc(heading)}</h2>${list.map((f) => `<h3>${esc(f.q)}</h3><p>${f.a} <a class="faq-src" href="${esc(f.source)}" target="_blank" rel="noopener">Source</a></p>`).join('')}</section>`;
+  }
+  /** The same questions as FAQPage structured data. */
+  function faqJsonld(/** @type {string} */ key) {
+    const list = FAQS[key];
+    if (!list) return [];
+    return [{ '@context': 'https://schema.org', '@type': 'FAQPage', mainEntity: list.map((f) => ({ '@type': 'Question', name: f.q, acceptedAnswer: { '@type': 'Answer', text: plain(f.a) } })) }];
+  }
+  /** "Sources" list at the bottom of a guide: [label, url] pairs, all read on `checked`. */
+  function sourcesList(/** @type {[string, string][]} */ list, /** @type {string} */ checked) {
+    return `<h2 id="sources">Sources</h2><p class="src-note">Official pages this guide is based on, read on ${longDate(checked)}. Timetables, prices and rules change, so check them before you travel.</p><ul class="sources">${list.map(([label, url]) => `<li><a href="${esc(url)}" target="_blank" rel="noopener">${esc(label)}</a></li>`).join('')}</ul>`;
+  }
+
   function prosePage({ path, title, h1, lede, desc, content, active = '', jsonld = [] }) {
     const u = urlFor(1);
     const body = `<nav class="wrap crumbs" aria-label="Breadcrumb"><ol><li><a href="${u('/')}">Home</a></li><li aria-current="page">${esc(h1)}</li></ol></nav>
@@ -612,41 +635,47 @@ ${newsletter('theme', u)}
       h1: 'Hiring a car in Dublin for a day trip',
       lede: 'Most of the drives on this site need a car. Here is what to sort out before you book one in Dublin: the insurance excess, the M50 toll, manual or automatic, and what to check before you drive off.',
       desc: 'What to know before hiring a car in Dublin for a day trip: insurance and the excess, credit card cover, the M50 toll in a hire car, licences, Northern Ireland and fuel.',
-      jsonld: [{ '@context': 'https://schema.org', '@type': 'Article', headline: 'Hiring a car in Dublin for a day trip', author: { '@type': 'Person', name: config.owner.name }, publisher: { '@type': 'Organization', name: config.name }, inLanguage: 'en-IE', url: abs('/car-hire-dublin/') }],
+      jsonld: [...faqJsonld('car-hire'), { '@context': 'https://schema.org', '@type': 'Article', headline: 'Hiring a car in Dublin for a day trip', author: { '@type': 'Person', name: config.owner.name }, publisher: { '@type': 'Organization', name: config.name }, inLanguage: 'en-IE', url: abs('/car-hire-dublin/') }],
       content: (u) => `
 ${cta('Compare prices from the big rental companies in one search.')}
 <h2 id="where">Airport or city?</h2>
 <p>Dublin Airport has the most rental desks, and it puts you straight onto the M1 and the M50, so you never have to drive through the city centre. A city pick-up can make sense if you are staying in town and only need the car for a day, but check the desk's opening hours, especially at weekends.</p>
 
 <h2 id="automatic">Manual or automatic</h2>
-<p>Most hire cars in Ireland are manual. Automatics cost more per day and sell out in summer, so if you need one, book it early. Everything is the mirror image of mainland Europe and North America: you drive on the left, and in a manual the gear stick is on your left.</p>
+<p>Many hire cars in Ireland are manual, and automatics are usually fewer, so if you need one, ask for it when you book. Everything is the mirror image of mainland Europe and North America: you drive on the left, and in a manual the gear stick is on your left.</p>
 
 <h2 id="insurance">Insurance and the excess</h2>
-<p>Hire prices in Ireland include third-party liability cover and collision damage cover, often called CDW. But the collision cover comes with an excess, the amount you pay if the car is damaged, and on a small car it often runs to €1,500 or more.</p>
+<p>Car rental companies only have to offer basic third-party insurance, which doesn't cover damage to the rental car itself. Most quotes add cover for the car, often called collision damage waiver or CDW, but it usually comes with a high excess: the amount you pay if the car is damaged. Check the excess figure in your quote before you book.</p>
 <ul>
-<li><strong>The hire company's excess cover.</strong> You pay a daily fee at the desk, often called super CDW or excess protection, to bring the excess down to little or nothing. It is the simplest option and the most expensive.</li>
-<li><strong>Standalone excess insurance.</strong> You buy a policy before you travel. If the car is damaged, you pay the hire company and claim the money back from your insurer.</li>
-<li><strong>What's often not covered.</strong> Tyres, glass, the underside of the car and putting in the wrong fuel are often excluded, even with extra cover. That matters on narrow country roads with stone walls, so read the small print.</li>
+<li><strong>The hire company's excess cover.</strong> You pay extra at the desk to bring the excess down. It is the simplest option.</li>
+<li><strong>Excess insurance from another insurer.</strong> You buy a policy before you travel, which may cost less. If the car is damaged, the hire company still takes the excess from your card and you claim it back from your insurer.</li>
+<li><strong>Read what's excluded.</strong> Whichever cover you choose, check what it leaves out before you sign. Country roads are narrow and often lined with stone walls.</li>
 </ul>
 
 <h2 id="credit-card">Paying, deposits and credit card cover</h2>
-<p>If you decline the hire company's excess cover, expect them to hold the full excess on your credit card until you return the car. Bring a credit card in the main driver's name, and ask before you book if you only have a debit card.</p>
-<p>Some credit cards include rental car cover, but many exclude Ireland, and most require you to decline the hire company's collision cover. Check your card's benefits guide, not its marketing page, and get confirmation from the card provider before you rely on it.</p>
+<p>You will usually need a credit card in the main driver's name for the security deposit, even if you booked with a debit card. If you decline the hire company's excess cover, ask how much they will hold on the card.</p>
+<p>Some credit cards include rental car cover. Check your card's terms to see whether it applies in Ireland and what it asks of you, and get confirmation from the card provider before you rely on it.</p>
 
 ${cta('Ready to compare prices?')}
 
 <h2 id="m50">The M50 toll in a hire car</h2>
-<p>The M50 ring road has a barrier-free toll between junctions 6 and 7. Cameras read the number plate, and the toll must be paid by 8pm the next day. Many of the big rental companies pay the toll for you and charge it back, sometimes with a fee, so ask at the desk who pays before you set off. If it is down to you, pay at <a href="https://www.eflow.ie/" target="_blank" rel="noopener">eflow.ie</a>. Unpaid tolls come back as penalties, usually with an admin charge from the hire company on top.</p>
-<p>The M1, M3, M7/M8 and a few other roads have toll plazas you pay as you drive through, by card or cash.</p>
+<p>The M50 ring road has a barrier-free toll between Junction 6 (Blanchardstown) and Junction 7 (Lucan). Cameras on the gantry read the number plate, and the toll must be paid by 8pm the next day. Many of the larger rental companies pay the toll themselves, so ask at the desk who pays before you set off. If it is down to you, pay at <a href="https://eflow.ie/" target="_blank" rel="noopener">eflow.ie</a> in time to avoid penalties, and check the rental terms for any charge the company adds.</p>
+<p>Every other toll road in Ireland, including the M1, M3, M4 and M7/M8, has a toll plaza with barriers. You pay as you pass, and the manual lanes take cash or card.</p>
 
 <h2 id="licence">Licence and age</h2>
-<p>Bring your full, physical driving licence: photos and photocopies are not accepted. EU and UK licences are fine, and so are licences from the US, Canada, Australia and New Zealand, without an International Driving Permit. Many companies want drivers to be 25 or over for their standard rates, charge a young-driver fee below that, and may add conditions for drivers over 70 or 75. Check the terms before you book.</p>
+<p>Bring your full driving licence; the desk will want to see the licence itself. Which licences you can drive on depends on where they were issued:</p>
+<ul>
+<li><strong>EU and EEA licences</strong> can be used while they are valid. <strong>UK licences</strong> are fine for visitors.</li>
+<li><strong>Licences from countries Ireland recognises for licence exchange</strong>, which include Australia, Canada and New Zealand, can be used for up to a year when visiting.</li>
+<li><strong>Licences from anywhere else, including the US</strong>: Citizens Information says you can drive for up to 12 months as a visitor if you also have an international driving permit from your country.</li>
+</ul>
+<p>Hire companies set their own rules on top: many want at least two years' experience with a full licence, and many have age limits or extra fees for younger and older drivers. Check the terms before you book.</p>
 
 <h2 id="northern-ireland">Driving into Northern Ireland</h2>
-<p>The border has no checks and on most roads you would not know you had crossed it. If you plan to drive into Northern Ireland, for example to the Mournes from Carlingford, tell the hire company when you pick up the car. Some charge a cross-border fee, and crossing without telling them can affect your cover. Speed limits in Northern Ireland are in miles per hour.</p>
+<p>There are no checks at the border, and on most roads you would not know you had crossed it. If you plan to drive into Northern Ireland, for example to the Mournes from Carlingford, tell the hire company when you book or pick up the car: some charge a cross-border fee, and their cover may depend on knowing. Speed limits in Northern Ireland are in miles per hour.</p>
 
 <h2 id="fuel">Fuel</h2>
-<p>Most hires are full to full: you collect the car with a full tank and return it full. Fill up near the return point and keep the receipt. Check whether the car takes petrol or diesel before you fill it, because putting in the wrong fuel is usually not covered by insurance.</p>
+<p>Check the fuel policy in the rental agreement. Many are full to full: you collect the car with a full tank and return it full, or pay the company to fill it. Fill up near the return point and keep the receipt. Check whether the car takes petrol or diesel before you fill it, and read whether the cover you chose includes putting in the wrong fuel.</p>
 
 <h2 id="checklist">Before you drive off</h2>
 <ul>
@@ -660,6 +689,13 @@ ${cta('Ready to compare prices?')}
 <h2 id="first-drive">Which drive first?</h2>
 <p>If you are new to driving on the left, start with something short: ${short.map((t) => `<a href="${u(tripPath(t))}">${esc(t.en)}</a>`).join(', ').replace(/, ([^,]*)$/, ' and $1')} all keep the total driving under three and a half hours. See <a href="${u('/short-drives-from-dublin/')}">short drives from Dublin</a>, and the <a href="${u('/driving-guide/')}">driving guide</a> for speed limits and road signs.</p>
 ${adSlot('guide')}
+${faqSection('car-hire')}
+${sourcesList([
+  ['Citizens Information: Foreign driving licences in Ireland', 'https://www.citizensinformation.ie/en/travel-and-recreation/motoring/driver-licensing/exchanging-foreign-driving-permit/'],
+  ['Competition and Consumer Protection Commission: Renting a car', 'https://www.ccpc.ie/consumer-advice/cars/renting-a-car'],
+  ['eFlow: About the M50 toll road', 'https://eflow.ie/how-it-works'],
+  ['Transport Infrastructure Ireland: Pay a toll', 'https://www.tii.ie/en/roads-tolling/tolling-information/pay-a-toll/'],
+], '2026-11-06')}
 ${cta('Compare car hire in Dublin')}
 <p class="small">No car and don't want one? <a href="${u('/day-trips-from-dublin-without-a-car/')}">Here's which drives work by bus or on a tour</a>.</p>`,
     });
@@ -691,6 +727,14 @@ ${cta('Compare car hire in Dublin')}
 <table class="t"><thead><tr><th scope="col">Drive</th><th scope="col">Without a car</th></tr></thead><tbody>${rows(u)}</tbody></table>
 <p>For buses and trains, the <a href="https://www.transportforireland.ie/" target="_blank" rel="noopener">TFI Journey Planner</a> has current times for every operator. Timetables change, so check it the day before.</p>
 ${groups.map(([k, h]) => `<h2 id="${k}">${h}</h2>${trips.filter((t) => NOCAR[t.id].level === k).map((t) => item(t, u)).join('')}`).join('\n')}
+${sourcesList([
+  ['St Kevin’s Bus: timetable', 'https://www.glendaloughbus.com/timetable.aspx'],
+  ['Heritage Ireland: Brú na Bóinne', 'https://heritageireland.ie/places-to-visit/bru-na-boinne-visitor-centre-newgrange-knowth-and-dowth/'],
+  ['Bus Éireann: route 161, Dundalk to Newry via Carlingford', 'https://www.buseireann.ie/routes-and-timetables/161'],
+  ['Irish Rail: timetables by route', 'https://www.irishrail.ie/en-ie/train-timetables/timetables-by-route'],
+  ['Transport for Ireland: Waterford city bus services', 'https://www.transportforireland.ie/getting-around/network-maps/waterford-city-bus-services/'],
+  ['Heritage Ireland: Loughcrew', 'https://heritageireland.ie/places-to-visit/loughcrew-megalithic-cemetery/'],
+], '2026-11-07')}
 <div class="cta-box"><p class="cta-t">Hire a car for the day</p><p>A one-day hire opens up all nine drives. <a href="${u('/car-hire-dublin/')}">Read what to know first</a>, then compare prices.</p><a class="btn" href="${esc(A.carHire.url)}" target="_blank" rel="sponsored noopener">Compare car hire on ${esc(A.carHire.partner)}</a><p class="small">Affiliate links: if you book through them, we may earn a commission at no extra cost to you.</p></div>`,
     });
   }

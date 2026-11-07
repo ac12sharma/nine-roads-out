@@ -1,5 +1,5 @@
 // Content validation: catches typos and missing fields in the hand-written data before they reach a page.
-//   node --test tests/
+//   node --test tests/content.test.mjs
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
@@ -7,6 +7,7 @@ import { TRIPS, FILTERS } from '../src/content/trips.mjs';
 import { RESTAURANTS, TYPES } from '../src/content/restaurants.mjs';
 import { THEMES, NOCAR } from '../src/content/guides.mjs';
 import { PHOTOS } from '../src/content/photos.mjs';
+import { FAQS } from '../src/content/faqs.mjs';
 
 const MAP = JSON.parse(fs.readFileSync(new URL('../src/content/ireland-map.json', import.meta.url), 'utf8'));
 const COUNTIES = Object.keys(MAP.counties);
@@ -102,4 +103,23 @@ test('every listed photo exists and has alt text', () => {
       assert.ok(nonEmpty(p.alt), `${p.file}: alt text is missing`);
     }
   }
+});
+
+const isDate = (/** @type {unknown} */ d) => typeof d === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(d) && !Number.isNaN(Date.parse(d)) && Date.parse(d) <= Date.now();
+
+test('every drive says when its practical details were last checked', () => {
+  for (const t of TRIPS) assert.ok(isDate(t.checked), `${t.id}: checked must be a past date like 2026-11-07, got ${t.checked}`);
+});
+
+test('every FAQ answer names an official https source and the date it was read', () => {
+  for (const [key, list] of Object.entries(FAQS)) {
+    assert.ok(list.length >= 3, `${key}: an FAQ needs at least three questions`);
+    for (const f of list) {
+      assert.ok(nonEmpty(f.q) && f.q.trim().endsWith('?'), `${key}: "${f.q}" must be a question`);
+      assert.ok(nonEmpty(f.a) && f.a.length >= 60, `${key}: the answer to "${f.q}" is too short`);
+      assert.match(f.source, /^https:\/\//, `${key}: "${f.q}" needs an https source`);
+      assert.ok(isDate(f.checked), `${key}: "${f.q}" needs the date its source was read`);
+    }
+  }
+  for (const key of Object.keys(FAQS)) assert.ok(key === 'car-hire' || IDS.includes(key), `FAQ for unknown page "${key}"`);
 });
