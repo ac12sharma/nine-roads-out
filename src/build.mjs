@@ -140,7 +140,7 @@ const fnFile = path.join(root, 'functions/api/chat.js');
 if (config.chat.ai && writesFunctions) {
   const tpl = fs.readFileSync(path.join(root, 'src/functions/chat.js'), 'utf8');
   fs.mkdirSync(path.dirname(fnFile), { recursive: true });
-  fs.writeFileSync(fnFile, tpl.replace('/*__KNOWLEDGE__*/null', JSON.stringify({ model: config.chat.model, site: config.name, data: chatData })));
+  fs.writeFileSync(fnFile, tpl.replace('/*__KNOWLEDGE__*/null', JSON.stringify({ model: config.chat.model, site: config.name, limits: config.chat.limits, data: chatData })));
 } else if (writesFunctions && fs.existsSync(fnFile)) {
   fs.rmSync(fnFile);
 }

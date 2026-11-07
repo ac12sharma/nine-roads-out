@@ -170,7 +170,9 @@ By default the planner answers from the site's data and, when it doesn't underst
 2. Create an API key in the [Claude Console](https://console.anthropic.com) and set a monthly spend limit there.
 3. In the Cloudflare Pages project, open **Settings > Variables and Secrets** and add a secret called `ANTHROPIC_API_KEY` with the key. Optionally add `CHAT_MODEL` to use a different model.
 4. Set `chat.ai` to `true` in `site.config.mjs` and push. The build generates `functions/api/chat.js` with the site's drives and restaurants built in, and Cloudflare serves it at `/api/chat`.
-5. Add a rate limiting rule in Cloudflare (**Security > WAF > Rate limiting rules**) for requests to `/api/chat`, for example 10 requests per 10 seconds per IP, so nobody can run up your bill.
+5. The function limits AI answers per visitor (5 a minute) and, with a KV binding called `CHAT_LIMITS`, per visitor per day and for the whole site per day. Set the limits in `chat.limits`. For a hard limit at the edge as well, add a rate limiting rule in Cloudflare (**Security > WAF > Rate limiting rules**) for `/api/chat`.
+
+Full setup, costs and what's tested: [docs/ai-planner.md](docs/ai-planner.md).
 
 The back end only accepts requests from your own domain, sends at most the last eight messages, and keeps replies short. Claude is told to recommend only the drives and places on the site and not to invent opening hours or prices. When it's on, the Privacy page automatically says that unanswered planner questions are sent to Anthropic to generate a reply.
 

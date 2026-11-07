@@ -297,7 +297,7 @@ function planner(){
         typing.remove();const text=String(d.reply||'');const found=D.trips.filter(t=>text.indexOf(t.en)>-1).slice(0,3);
         if(found.length){ctx.trip=found[0];ctx.last=found;}
         bot(esc(text).replace(/\n{2,}/g,'</p><p>').replace(/\n/g,'<br>'),found.map(card).join('')+chips(found.length?['Where to eat on '+found[0].en,'Something similar']:START.slice(0,3)));
-      }).catch(()=>{typing.remove();bot('I couldn\'t get an answer to that just now. Try one of these instead.',chips(START));});
+      }).catch(st=>{typing.remove();bot(st===429?'That\'s a lot of questions in a short time. I can still help with the drives, places to eat and timing: try one of these.':'I couldn\'t get an answer to that just now. Try one of these instead.',chips(START));});
   }
 }
 
