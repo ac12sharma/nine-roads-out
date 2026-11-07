@@ -126,6 +126,27 @@ test('every long-form guide has at least 800 words, its sources and related page
   }
 });
 
+test('every affiliate and featured link is marked rel="sponsored", and its page says so', async () => {
+  const { default: config } = await import('../site.config.mjs');
+  const { RESTAURANTS } = await import('../src/content/restaurants.mjs');
+  const paid = new Set(Object.values(RESTAURANTS).flat().filter((r) => r.featured && r.url).map((r) => r.url));
+  const hosts = Object.values(config.affiliates).map((a) => new URL(a.url.replace('{q}', 'x')).hostname);
+  const problems = [];
+  for (const [page, html] of pages) {
+    let any = false;
+    for (const m of html.matchAll(/<a [^>]*href="([^"]+)"[^>]*>/g)) {
+      const href = m[1].replace(/&amp;/g, '&');
+      if (!/^https?:/.test(href)) continue;
+      const isPaid = hosts.includes(new URL(href).hostname) || paid.has(href);
+      if (!isPaid) continue;
+      any = true;
+      if (!/rel="[^"]*\bsponsored\b/.test(m[0])) problems.push(`${page}: ${href} is missing rel="sponsored"`);
+    }
+    if (any && !/Affiliate links?:|paid placements?|Featured partner/i.test(html)) problems.push(`${page}: has paid links but no disclosure`);
+  }
+  assert.deepEqual(problems, []);
+});
+
 test('every drive has a GPX file with its verified stops', () => {
   for (const [page, html] of pages) {
     const m = html.match(/href="(\/gpx\/[a-z-]+\.gpx)"/);
