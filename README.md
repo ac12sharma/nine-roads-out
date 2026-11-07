@@ -40,8 +40,11 @@ Install the dev tools once with `npm ci`, plus `npx playwright install chromium`
 | `npm run lighthouse` | Lighthouse on six key pages, median of three runs. CI uses `lighthouserc.json`, which fails under 90 for mobile performance and 95 for accessibility, best practices and SEO. |
 | `npm run page-weight` | Bytes and requests for every page as a phone loads it. |
 | `npm run check-links` | Every external link (CI runs it weekly, as other sites go down). |
+| `npm run check-seo` | Structured data against the schema.org vocabulary, Google's required fields, canonical URLs against the sitemap, robots.txt and Open Graph images (run `npm run build` first). |
+| `node scripts/geocode-stops.mjs` | Rebuilds `src/content/coords.json` for the GPX files: keeps a stop's position only where OpenStreetMap and Wikidata agree within 1.5 km. |
+| `node scripts/commons-shortlist.mjs` | Lists Wikimedia Commons photos per drive that meet the licence and size rules. Downloads nothing; every photo needs checking and approving by hand. |
 
-Results and history are in [docs/metrics.md](docs/metrics.md) and [docs/accessibility.md](docs/accessibility.md).
+Results and history are in [docs/metrics.md](docs/metrics.md) and [docs/accessibility.md](docs/accessibility.md). Every fact checked against an official source, and what changed, is in [docs/fact-check.md](docs/fact-check.md).
 
 ## Where things live
 
