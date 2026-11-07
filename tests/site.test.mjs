@@ -101,6 +101,18 @@ test('every page has a title, a description, a canonical URL and one h1', () => 
   assert.deepEqual(problems, []);
 });
 
+test('every drive has a GPX file with its verified stops', () => {
+  for (const [page, html] of pages) {
+    const m = html.match(/href="(\/gpx\/[a-z-]+\.gpx)"/);
+    if (!m) continue;
+    const gpx = fs.readFileSync(path.join(out, m[1]), 'utf8');
+    assert.match(gpx, /^<\?xml version="1\.0" encoding="UTF-8"\?>\n<gpx version="1\.1"/, `${m[1]} is not a GPX 1.1 file`);
+    assert.ok((gpx.match(/<wpt /g) || []).length >= 1, `${m[1]} has no waypoints`);
+    assert.equal((gpx.match(/<wpt /g) || []).length, (gpx.match(/<rtept /g) || []).length);
+  }
+  assert.equal(fs.readdirSync(path.join(out, 'gpx')).length, 9);
+});
+
 test('the bundled app.js is one classic script with the shared modules inlined', () => {
   const file = fs.readdirSync(path.join(out, 'assets')).find((f) => /^app\.[0-9a-f]+\.js$/.test(f));
   assert.ok(file, 'no app.*.js in assets');

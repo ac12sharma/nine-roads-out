@@ -11,6 +11,7 @@ import config from '../site.config.mjs';
 import { RESTAURANTS } from './content/restaurants.mjs';
 import { trips, plannerData } from './data.mjs';
 import { bundle } from './bundle.mjs';
+import { gpxFor } from './gpx.mjs';
 import { createRenderer } from './pages.mjs';
 import { THEMES } from './content/guides.mjs';
 import { PHOTOS } from './content/photos.mjs';
@@ -46,6 +47,7 @@ const chatData = plannerData();
   fs.writeFileSync(path.join(out, 'assets', `data.${hash}.json`), json);
   assets.data = `/assets/data.${hash}.json`;
 }
+const coords = JSON.parse(fs.readFileSync(path.join(root, 'src/content/coords.json'), 'utf8'));
 const irelandMap = JSON.parse(fs.readFileSync(path.join(root, 'src/content/ireland-map.json'), 'utf8'));
 
 // Your own photos: files in public/photos/, listed in src/content/photos.mjs. The build reads each
@@ -81,11 +83,12 @@ for (const [id, list] of Object.entries(PHOTOS)) {
 }
 
 // 4. Pages.
-const r = createRenderer({ config, trips, assets, preview, restaurants: RESTAURANTS, irelandMap, photos });
+const r = createRenderer({ config, trips, assets, preview, restaurants: RESTAURANTS, irelandMap, photos, coords });
 const write = (rel, html) => { const f = path.join(out, rel); fs.mkdirSync(path.dirname(f), { recursive: true }); fs.writeFileSync(f, html); };
 
 write('index.html', r.home());
 trips.forEach((t, i) => write(`${t.slug}/index.html`, r.trip(t, i)));
+trips.forEach((t) => write(`gpx/${t.slug}.gpx`, gpxFor(t, coords[t.id] || [], `${config.siteUrl}/${t.slug}/`)));
 write('driving-guide/index.html', r.guide());
 THEMES.forEach((th) => write(`${th.slug}/index.html`, r.theme(th)));
 write('car-hire-dublin/index.html', r.carHire());

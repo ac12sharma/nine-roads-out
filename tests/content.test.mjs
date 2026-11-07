@@ -123,3 +123,19 @@ test('every FAQ answer names an official https source and the date it was read',
   }
   for (const key of Object.keys(FAQS)) assert.ok(key === 'car-hire' || IDS.includes(key), `FAQ for unknown page "${key}"`);
 });
+
+test('GPX coordinates: every stop is verified by two sources or says why it was left out', () => {
+  const coords = JSON.parse(fs.readFileSync(new URL('../src/content/coords.json', import.meta.url), 'utf8'));
+  assert.deepEqual(Object.keys(coords).sort(), [...IDS].sort());
+  for (const t of TRIPS) {
+    const names = t.stops.filter((s) => !s.home).map((s) => s.n);
+    assert.deepEqual(coords[t.id].map((/** @type {{ n: string }} */ c) => c.n), names, `${t.id}: coords.json is out of step with the stops; re-run scripts/geocode-stops.mjs`);
+    for (const c of coords[t.id]) {
+      if (c.skipped) { assert.ok(nonEmpty(c.skipped)); assert.equal(c.lat, undefined); continue; }
+      assert.ok(c.lat > 51.3 && c.lat < 55.5 && c.lon > -10.7 && c.lon < -5.9, `${t.id}: ${c.n} is not in Ireland`);
+      assert.match(c.osm, /^https:\/\/www\.openstreetmap\.org\//, `${t.id}: ${c.n} needs its OpenStreetMap source`);
+      assert.match(c.wikidata, /^https:\/\/www\.wikidata\.org\/wiki\/Q\d+$/, `${t.id}: ${c.n} needs its Wikidata source`);
+      assert.ok(c.km <= 1.5, `${t.id}: ${c.n}: the sources are ${c.km} km apart`);
+    }
+  }
+});

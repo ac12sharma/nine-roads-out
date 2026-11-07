@@ -6,6 +6,9 @@
   Cache-Control: public, max-age=2592000
 /og/*
   Cache-Control: public, max-age=2592000
+/gpx/*
+  Content-Type: application/gpx+xml
+  Content-Disposition: attachment
 /*
   X-Content-Type-Options: nosniff
   Referrer-Policy: strict-origin-when-cross-origin

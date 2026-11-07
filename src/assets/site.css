@@ -269,6 +269,7 @@ h1,h2,h3{text-wrap:balance}
 .faq-src{font:600 14px/1.4 var(--display);white-space:nowrap}
 .src-note{color:var(--ink-2)}
 .checked{margin:12px 0 0;color:var(--ink-2);font-size:15px}
+.gpx{margin:14px 0 0;font:600 14px/1.4 var(--display)}.gpx a{text-decoration:underline;text-underline-offset:3px}.gpx span{display:block;margin-top:2px;font-weight:400;color:var(--ink-2)}
 .prose a{text-underline-offset:3px}
 .prose .btn{color:var(--accent-ink);text-decoration:none}
 .prose .small{font-size:14.5px;color:var(--ink-3)}

@@ -6,7 +6,7 @@ import { THEMES, NOCAR } from './content/guides.mjs';
 import { TOTAL, levelFor, levelBands } from './shared/levels.mjs';
 import { FAQS } from './content/faqs.mjs';
 
-export function createRenderer({ config, trips, assets, preview, restaurants, irelandMap, photos = {} }) {
+export function createRenderer({ config, trips, assets, preview, restaurants, irelandMap, photos = {}, coords = {} }) {
   const adsOn = !!config.adsense.client && !preview;
   const year = new Date().getFullYear();
   const abs = (p) => config.siteUrl + p;
@@ -320,6 +320,7 @@ ${newsletter('trip', u)}
 <aside class="trip-side" aria-label="Plan this drive"><div class="side-in">
 <a class="btn btn-block" href="${esc(mapsURL(t))}" target="_blank" rel="noopener">Open the route in Google Maps</a>
 <p class="maps-note">Directions from Dublin through the main stops.</p>
+${gpxLink(t, u)}
 ${planBox(t, u)}
 ${adSlot('sidebar', 'ad-side')}
 </div></aside>
@@ -369,6 +370,13 @@ ${adSlot('footer', 'wrap')}
   /** "Sources" list at the bottom of a guide: [label, url] pairs, all read on `checked`. */
   function sourcesList(/** @type {[string, string][]} */ list, /** @type {string} */ checked) {
     return `<h2 id="sources">Sources</h2><p class="src-note">Official pages this guide is based on, read on ${longDate(checked)}. Timetables, prices and rules change, so check them before you travel.</p><ul class="sources">${list.map(([label, url]) => `<li><a href="${esc(url)}" target="_blank" rel="noopener">${esc(label)}</a></li>`).join('')}</ul>`;
+  }
+
+  /** Download link for the drive's GPX file, saying how many stops it holds. */
+  function gpxLink(/** @type {{ id: string, slug: string, stops: { home?: boolean }[] }} */ t, /** @type {(p: string) => string} */ u) {
+    const list = coords[t.id] || [], ok = list.filter((/** @type {{ lat?: number }} */ c) => c.lat != null).length;
+    if (!ok) return '';
+    return `<p class="gpx"><a href="${u('/gpx/' + t.slug + '.gpx')}" download>Download the stops as GPX</a><span>${ok} of ${list.length} stops, for a sat-nav or mapping app.${ok < list.length ? ' Stops without a verified position are left out.' : ''}</span></p>`;
   }
 
   function prosePage({ path, title, h1, lede, desc, content, active = '', jsonld = [] }) {
