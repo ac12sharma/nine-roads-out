@@ -337,7 +337,7 @@ ${adSlot('footer', 'wrap')}
 <section class="wrap more"><h2>More drives from Dublin</h2><ul class="cards cards-3">${more.map((m) => card(m, u)).join('')}</ul></section>`;
     return layout({
       path, depth: 1, ogType: 'article', ogImage: `/og/${t.id}.jpg`, tripId: t.id,
-      title: `${t.en} day trip from Dublin: ${t.via.replace(/^And /, 'and ')} | ${config.name}`,
+      title: `${t.en} day trip from Dublin | ${config.name}`,
       desc: t.desc,
       preload: `<link rel="preload" as="image" fetchpriority="high" href="${u('/images/scenes/' + t.id + '-plate.webp')}" media="(min-width: 641px)"><link rel="preload" as="image" fetchpriority="high" href="${u('/images/scenes/' + t.id + '-plate-sm.webp')}" media="(max-width: 640px)">`,
       jsonld: [
@@ -397,7 +397,7 @@ ${adSlot('footer', 'wrap')}
     }).join('');
     return prosePage({
       path: '/driving-guide/', active: 'guide', related: ['/best-time-of-year-for-each-drive/', '/car-hire-dublin/', '/day-trips-from-dublin-without-a-car/'],
-      title: 'Driving from Dublin: tolls, speed limits, road signs and daylight',
+      title: 'Driving from Dublin: tolls, speed limits and signs',
       h1: 'Driving from Dublin: the day-trip guide',
       lede: 'What makes a day drive from Dublin go smoothly: tolls, speed limits, how to read Irish road signs, narrow roads, weather and how much daylight you will get.',
       desc: 'A practical guide to day drives from Dublin: the M50 toll, Irish speed limits, how to read road signs, narrow country roads, weather and daylight by month.',
@@ -593,7 +593,7 @@ ${bands.map((b) => `<tr><th scope="row">Level ${b.level.n}, ${b.level.name.toLow
 </section>`;
     return layout({
       path: '/how-much-of-ireland/', depth: 1, active: 'ireland', ogImage: '/og/ireland.jpg',
-      title: `How much of Ireland have you driven? Find your traveller level | ${config.name}`,
+      title: `How much of Ireland have you driven? | ${config.name}`,
       desc: "Tick off the counties you've driven in and the drives you've done to see how much of Ireland you've covered by road, and whether you're a Level 1, 2 or 3 traveller.",
       body,
     });
@@ -641,7 +641,7 @@ ${newsletter('theme', u)}
     const short = trips.filter((t) => t.drive <= 3.25);
     return prosePage({
       path: '/car-hire-dublin/', active: 'hire',
-      title: 'Hiring a car in Dublin for a day trip: insurance, tolls and tips',
+      title: 'Hiring a car in Dublin: insurance, tolls and tips',
       h1: 'Hiring a car in Dublin for a day trip',
       lede: 'Most of the drives on this site need a car. Here is what to sort out before you book one in Dublin: the insurance excess, the M50 toll, manual or automatic, and what to check before you drive off.',
       desc: 'What to know before hiring a car in Dublin for a day trip: insurance and the excess, credit card cover, the M50 toll in a hire car, licences, Northern Ireland and fuel.',
@@ -728,7 +728,7 @@ ${cta('Compare car hire in Dublin')}
     };
     return prosePage({
       path: '/day-trips-from-dublin-without-a-car/', active: 'drives',
-      title: 'Day trips from Dublin without a car: tours, buses and which drives need wheels',
+      title: 'Day trips from Dublin without a car',
       h1: 'No car? Day trips from Dublin without driving',
       lede: 'Some of the nine drives work well by bus or on a guided tour. Others really need a car. Here is which is which, and the simplest way to do each one.',
       desc: 'Which day trips from Dublin work without a car: the bus to Glendalough, Newgrange tours, getting to Carlingford, Tramore and Cashel, and the drives that need a car.',

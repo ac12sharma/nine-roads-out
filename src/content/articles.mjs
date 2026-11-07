@@ -57,7 +57,7 @@ const a = (/** @type {string} */ href, /** @type {string} */ text) => `<a href="
 export const ARTICLES = [
   {
     slug: 'newgrange-winter-solstice',
-    title: 'Newgrange winter solstice: how the lottery and booking work',
+    title: 'Newgrange winter solstice: the lottery and booking',
     h1: 'Newgrange at the winter solstice: the lottery, and how to visit',
     lede: 'For a few mornings around 21 December, the rising sun shines into the heart of Newgrange. Only a few dozen people a year see it from inside. Here is how the lottery works, what to do if you don’t win, and how to book a visit on any other day.',
     desc: 'How the Newgrange winter solstice lottery works, who can enter and when it closes, the livestream, and how to book Newgrange and Knowth the rest of the year.',
@@ -115,7 +115,7 @@ export const ARTICLES = [
   },
   {
     slug: 'glendalough-walks',
-    title: 'The best walk at Glendalough: the Spinc, the Miners’ Road and the lakes',
+    title: 'Best walks at Glendalough: the Spinc and the lakes',
     h1: 'The best walk at Glendalough',
     lede: 'Glendalough has nine waymarked trails, from a 30-minute stroll to a four-hour mountain loop. If you only do one, make it the Spinc. Here is how it compares with the gentler walks, where they start, and what to bring.',
     desc: 'Glendalough’s nine waymarked walks compared: the Spinc and Glenealo Valley loop, the Miners’ Road and the Green Road, with distances, times, parking and trail works in 2026.',
@@ -177,7 +177,7 @@ export const ARTICLES = [
   },
   {
     slug: 'loughcrew-walk',
-    title: 'Walking up to the Loughcrew cairns: the climb, the equinox and what to know',
+    title: 'Loughcrew cairns walk: the climb and the equinox',
     h1: 'The walk up to the Loughcrew cairns',
     lede: 'Loughcrew is the quiet one: about 30 passage tombs, some 5,000 years old, on hilltops in north-west Meath, free to visit all year. Here is what the climb is like, why people gather at the equinoxes, and what to know before you go.',
     desc: 'Walking to the Loughcrew cairns in County Meath: the steep climb to Cairn T, the spring and autumn equinox sunrise, access, dogs, directions and what to combine it with.',
@@ -228,7 +228,7 @@ export const ARTICLES = [
   },
   {
     slug: 'hook-head-walks',
-    title: 'Walks at Hook Head: Baginbun, the lighthouse and the Tintern woods',
+    title: 'Walks at Hook Head: Baginbun, lighthouse, Tintern',
     h1: 'The best walks on the Hook peninsula',
     lede: 'Hook Head is better for short walks than long hikes. The woodland trails at Tintern are the best proper walk on the peninsula, Baginbun is the best stretch of coast, and the lighthouse is 115 steps straight up. Here is what each is like, from the official pages.',
     desc: 'Walking on the Hook peninsula in Wexford: the woodland trails at Tintern Abbey, the coast at Baginbun, climbing Hook Lighthouse, and whale watching from November to February.',
@@ -281,7 +281,7 @@ export const ARTICLES = [
   },
   {
     slug: 'best-time-of-year-for-each-drive',
-    title: 'The best time of year for each drive from Dublin, season by season',
+    title: 'Best time of year for each drive from Dublin',
     h1: 'The best time of year for each drive',
     lede: 'Every one of these drives works in any month, but not equally well. Daylight, opening seasons and a few dates fixed in the sky decide which drive to do when. Here is a season-by-season guide.',
     desc: 'When to do each of the nine day drives from Dublin: daylight by season, opening seasons for Newgrange, Knowth, Tintern and Cashel, the solstice and equinoxes, and winter whales at Hook Head.',

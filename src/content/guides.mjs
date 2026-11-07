@@ -6,7 +6,7 @@ export const THEMES = [
   {
     key: 'coast', slug: 'coastal-drives-from-dublin', og: 'hook',
     nav: 'Coastal drives',
-    title: 'Coastal drives from Dublin: three day trips to the sea',
+    title: 'Coastal drives from Dublin: three trips to the sea',
     h1: 'Coastal day drives from Dublin',
     lede: 'Three of the nine drives end at the sea: a glacial fjord in Louth, a cliff coast in Waterford and a lighthouse headland in Wexford. Here is how they compare, and how to choose.',
     desc: 'The best coastal day drives from Dublin: Carlingford Lough, the Copper Coast and Hook Head, compared by drive time, with the routes and tips for each.',
@@ -28,7 +28,7 @@ export const THEMES = [
   {
     key: 'mountains', slug: 'mountain-drives-from-dublin', og: 'glendalough',
     nav: 'Mountain drives',
-    title: 'Mountain drives from Dublin: five scenic passes for a day trip',
+    title: 'Mountain drives from Dublin: five scenic passes',
     h1: 'Mountain day drives from Dublin',
     lede: 'Bog passes, a notch cut through rock by hand and a climb up hairpin bends. Five of the nine drives cross real mountain roads, from the Sally Gap, under an hour from the city, to the Vee in the Knockmealdowns.',
     desc: 'Five scenic mountain drives from Dublin for a day trip: the Sally Gap, the Windy Gap, Slieve Bloom, Mount Leinster and the Vee, with routes and safety tips.',
@@ -52,7 +52,7 @@ export const THEMES = [
   {
     key: 'heritage', slug: 'historic-day-trips-from-dublin', og: 'boyne',
     nav: 'Historic drives',
-    title: 'Historic day trips from Dublin by car: tombs, monasteries and castles',
+    title: 'Historic day trips from Dublin by car',
     h1: 'Historic day drives from Dublin',
     lede: 'Five thousand years of Irish history within a day’s drive of Dublin: passage tombs older than the pyramids, early Christian monasteries, the seat of the Kings of Munster and a lighthouse that has stood for about 800 years.',
     desc: 'Historic day trips from Dublin by car: Newgrange, Loughcrew, Glendalough, the Rock of Cashel and Hook Head, with booking tips and the free sites on each route.',
@@ -77,7 +77,7 @@ export const THEMES = [
   {
     key: 'short', slug: 'short-drives-from-dublin', og: 'loughcrew',
     nav: 'Short drives',
-    title: 'Short day drives from Dublin: four trips under 3½ hours at the wheel',
+    title: 'Short day drives from Dublin, under 3½ hours',
     h1: 'Short day drives from Dublin',
     lede: 'Not every day out needs six hours in the car. These four drives keep the total driving under three and a half hours, which leaves time for the stops even in midwinter, when there are fewer than eight hours of daylight.',
     desc: 'Four short day drives from Dublin with under 3½ hours of driving in total: Glendalough, the Boyne Valley, Loughcrew and Carlingford. Good for winter days and half days.',
