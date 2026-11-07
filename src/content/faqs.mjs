@@ -60,7 +60,7 @@ export const FAQS = {
     },
     {
       q: 'How do I see the winter solstice inside Newgrange?',
-      a: 'Places in the chamber on the mornings around the solstice, 21 December, are given out by a public lottery that you enter online at <a href="https://solsticelottery.ie/">solsticelottery.ie</a>, with one entry per email address. Each winner can bring one guest, and places can't be transferred. In 2026 there were 34,263 entries and 38 winners, drawn on 15 October by children from local primary schools. The OPW also livestreams the sunrise.',
+      a: 'Places in the chamber on the mornings around the solstice, 21 December, are given out by a public lottery that you enter online at <a href="https://solsticelottery.ie/">solsticelottery.ie</a>, with one entry per email address. Each winner can bring one guest, and places cannot be transferred. In 2026 there were 34,263 entries and 38 winners, drawn on 15 October by children from local primary schools. The OPW also livestreams the sunrise.',
       source: 'https://heritageireland.ie/visit/newgrange-winter-solstice/',
       checked: '2026-11-06',
     },
