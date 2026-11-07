@@ -29,7 +29,7 @@ test('with no form address, production pages have no sign-up box and Privacy has
 
 test('the preview build shows a demo box that submits nowhere', () => {
   const html = render({ action: '' }, true).home();
-  assert.match(html, /<form class="news-form" action="#" method="post" data-demo>/);
+  assert.match(html, /<form class="news-form" action="#" method="post" data-where="home" data-demo>/);
 });
 
 test('with a Buttondown address, the form matches Buttondown’s embed code', () => {
@@ -37,7 +37,7 @@ test('with a Buttondown address, the form matches Buttondown’s embed code', ()
   for (const html of pagesOf(r)) {
     const form = html.match(/<form class="news-form"[\s\S]*?<\/form>/)?.[0];
     assert.ok(form, 'no sign-up form');
-    assert.match(form, new RegExp(`action="${ACTION}" method="post">`));
+    assert.match(form, new RegExp(`action="${ACTION}" method="post" data-where="\\w+">`));
     assert.match(form, /<input id="news-email-\w+" type="email" name="email" required/);
     assert.match(form, /<input type="hidden" name="embed" value="1">/);
     assert.doesNotMatch(form, /target=/, 'Buttondown’s form opens its confirmation page in the same tab');

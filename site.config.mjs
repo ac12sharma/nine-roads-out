@@ -34,7 +34,10 @@ export default {
 
   // Cloudflare Web Analytics token (cookieless, so no consent banner needed for it).
   // On Cloudflare Pages you can also switch it on in the dashboard and leave this empty.
-  analytics: { cloudflareToken: '' },
+  // events: true records clicks on booking links, GPX downloads, planner use and the like through
+  // this site's own /api/event function, with no cookies or identifiers. It needs an Analytics Engine
+  // binding called EVENTS on the Pages project. See docs/analytics.md before switching it on.
+  analytics: { cloudflareToken: '', events: false },
 
   // Affiliate links. Replace each URL with the tracked link from your partner dashboard.
   // `{q}` is replaced with the place name for that drive. Until you change them, these are

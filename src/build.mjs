@@ -132,14 +132,25 @@ write('robots.txt', preview ? 'User-agent: *\nDisallow: /\n' : `User-agent: *\nA
 if (config.adsense.client) write('ads.txt', `google.com, ${config.adsense.client.replace(/^ca-/, '')}, DIRECT, f08c47fec0942fa0\n`);
 write('site.webmanifest', JSON.stringify({ name: config.name, short_name: config.name, start_url: '/', display: 'browser', background_color: '#ECEFE8', theme_color: '#0B6A47', icons: [{ src: '/icon-192.png', sizes: '192x192', type: 'image/png' }, { src: '/icon-512.png', sizes: '512x512', type: 'image/png' }] }, null, 2));
 
-// 6. Optional AI back end for the trip planner (Cloudflare Pages Function).
+// 6. Optional Cloudflare Pages Functions: the AI back end for the trip planner, and the event recorder.
+//    Only a real build writes them (not the preview, and not test builds with --out).
+import { EVENTS } from './shared/events.mjs';
+const writesFunctions = !preview && outArg === -1;
 const fnFile = path.join(root, 'functions/api/chat.js');
-if (config.chat.ai && !preview) {
+if (config.chat.ai && writesFunctions) {
   const tpl = fs.readFileSync(path.join(root, 'src/functions/chat.js'), 'utf8');
   fs.mkdirSync(path.dirname(fnFile), { recursive: true });
   fs.writeFileSync(fnFile, tpl.replace('/*__KNOWLEDGE__*/null', JSON.stringify({ model: config.chat.model, site: config.name, data: chatData })));
-} else if (!preview && fs.existsSync(fnFile)) {
+} else if (writesFunctions && fs.existsSync(fnFile)) {
   fs.rmSync(fnFile);
+}
+const evFile = path.join(root, 'functions/api/event.js');
+if (config.analytics.events && writesFunctions) {
+  const tpl = fs.readFileSync(path.join(root, 'src/functions/event.js'), 'utf8');
+  fs.mkdirSync(path.dirname(evFile), { recursive: true });
+  fs.writeFileSync(evFile, tpl.replace('/*__EVENTS__*/null', JSON.stringify(Object.fromEntries(Object.keys(EVENTS).map((k) => [k, 1])))));
+} else if (writesFunctions && fs.existsSync(evFile)) {
+  fs.rmSync(evFile);
 }
 
 // 7. Launch checklist in the terminal.

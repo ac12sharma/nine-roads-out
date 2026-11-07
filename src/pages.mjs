@@ -41,7 +41,7 @@ export function createRenderer({ config, trips, assets, preview, restaurants, ir
     const hidden = Object.entries(N.hidden || {}).map(([k, v]) => `<input type="hidden" name="${esc(k)}" value="${esc(v)}">`).join('');
     return `<section class="news news-${where}" aria-labelledby="news-${where}"><div class="news-in">
 <div class="news-copy"><h2 id="news-${where}">${esc(N.heading)}</h2><p>${esc(N.pitch)}</p></div>
-<div class="news-act"><form class="news-form" action="${esc(N.action || '#')}" method="post"${demo ? ' data-demo' : ''}>
+<div class="news-act"><form class="news-form" action="${esc(N.action || '#')}" method="post" data-where="${where}"${demo ? ' data-demo' : ''}>
 <label class="sr" for="news-email-${where}">Email address</label><input id="news-email-${where}" type="email" name="${esc(N.field || 'email')}" required placeholder="Your email address" autocomplete="email">${hidden}
 <button class="btn" type="submit">Sign me up</button></form>
 <p class="news-small">You’ll get an email asking you to confirm. No spam, unsubscribe any time. See the <a href="${u('/privacy/')}">privacy policy</a>.</p></div>
@@ -114,7 +114,7 @@ ${footer(u)}
 <script src="${u(assets.app)}" defer></script>`;
     if (fragment) return head + '\n' + doc + '\n';
     return `<!doctype html>
-<html lang="en-IE">
+<html lang="en-IE"${config.analytics.events && !preview ? ' data-events="/api/event"' : ''}>
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
@@ -324,7 +324,7 @@ ${daylightBlock()}
 <div><dt>Best time</dt><dd class="best">${esc(t.best)}</dd></div>
 </dl>
 <p class="lede">${esc(t.lede)}</p>
-<div class="share" data-url="${esc(abs(path))}" data-title="${esc(shareText)}"><button type="button" class="share-b" data-share="copy">Copy link</button><a class="share-b" href="https://wa.me/?text=${encodeURIComponent(shareText + ' ' + abs(path))}" target="_blank" rel="noopener">Send on WhatsApp</a><button type="button" class="share-b" data-share="native" hidden>Share</button><button type="button" class="share-b" data-print>Print route card</button><span class="share-msg" role="status"></span></div>
+<div class="share" data-url="${esc(abs(path))}" data-title="${esc(shareText)}"><button type="button" class="share-b" data-share="copy">Copy link</button><a class="share-b" href="https://wa.me/?text=${encodeURIComponent(shareText + ' ' + abs(path))}" target="_blank" rel="noopener">Send on WhatsApp</a><button type="button" class="share-b" data-share="native" hidden>Share</button><button type="button" class="share-b" data-print data-track="print_route" data-track-l="${t.id}">Print route card</button><span class="share-msg" role="status"></span></div>
 <div class="done"><button type="button" class="done-b" data-done="${t.id}" data-counties="${esc(t.counties.join('|'))}" aria-pressed="false"><span class="done-box" aria-hidden="true"></span><span class="done-t">I've done this drive</span></button><p class="done-msg" data-done-msg aria-live="polite">Tick it off to add ${t.counties.length} counties to <a href="${u('/how-much-of-ireland/')}">your Ireland map</a>.</p></div>
 ${adSlot('inArticle')}
 <h2 class="sec-h">The route</h2>
@@ -339,7 +339,7 @@ ${newsletter('trip', u)}
 <p class="print-only print-foot">${esc(abs(path).replace(/^https?:\/\//, ''))}. Drive times are approximate. Check opening times and road conditions before you set off.</p>
 </div>
 <aside class="trip-side" aria-label="Plan this drive"><div class="side-in">
-<a class="btn btn-block" href="${esc(mapsURL(t))}" target="_blank" rel="noopener">Open the route in Google Maps</a>
+<a class="btn btn-block" href="${esc(mapsURL(t))}" target="_blank" rel="noopener" data-track="maps_open" data-track-l="${t.id}">Open the route in Google Maps</a>
 <p class="maps-note">Directions from Dublin through the main stops.</p>
 ${gpxLink(t, u)}
 ${planBox(t, u)}
@@ -397,7 +397,7 @@ ${adSlot('footer', 'wrap')}
   function gpxLink(/** @type {{ id: string, slug: string, stops: { home?: boolean }[] }} */ t, /** @type {(p: string) => string} */ u) {
     const list = coords[t.id] || [], ok = list.filter((/** @type {{ lat?: number }} */ c) => c.lat != null).length;
     if (!ok) return '';
-    return `<p class="gpx"><a href="${u('/gpx/' + t.slug + '.gpx')}" download>Download the stops as GPX</a><span>${ok} of ${list.length} stops, for a sat-nav or mapping app.${ok < list.length ? ' Stops without a verified position are left out.' : ''}</span></p>`;
+    return `<p class="gpx"><a href="${u('/gpx/' + t.slug + '.gpx')}" download data-track="gpx_download" data-track-l="${t.id}">Download the stops as GPX</a><span>${ok} of ${list.length} stops, for a sat-nav or mapping app.${ok < list.length ? ' Stops without a verified position are left out.' : ''}</span></p>`;
   }
 
   function prosePage({ path, title, h1, lede, desc, content, active = '', jsonld = [], ogImage = '/og/home.jpg', ogType = 'website', related = [] }) {
@@ -529,7 +529,8 @@ ${imageCredits(u)}`,
 <p>${config.newsletter && config.newsletter.action ? 'You do not need an account to use this site, and we only ask for your email address if you choose to sign up for the newsletter.' : 'You do not need an account to use this site and we do not ask for your name or email address.'} ${thirdParty.length ? `The fonts and images that make up the site are served from our own host. The exceptions are ${thirdParty.join(' and ')}, described below.` : 'The fonts, images and scripts that make up the site are served from our own host, so loading a page does not send your details to font or script services.'} This site does not set any cookies of its own.</p>
 <ul>
 <li><strong>Server logs.</strong> Our hosting provider records technical information such as IP address, browser type and the page requested, to keep the site secure and working. These logs are kept for a short period and are not used to identify you.</li>
-<li><strong>Analytics.</strong> We may use Cloudflare Web Analytics to count visits. It does not use cookies and does not track you across other sites.</li>
+<li><strong>Analytics.</strong> We may use Cloudflare Web Analytics to count visits. It does not use cookies and does not track you across other sites.</li>${config.analytics.events ? `
+<li><strong>Clicks.</strong> When you click a booking link, open a route in Google Maps, download a route file, print a route card, share a page, tick off a drive or use the trip planner, your browser tells this site what kind of thing was clicked and on which page, for example "a car hire link on the Glendalough page". This goes to our own site, not to an analytics company. No cookie, identifier or IP address is stored with it, and nothing you type into the planner is sent. If your browser sends a Global Privacy Control or Do Not Track signal, nothing is sent at all. These records are kept for three months.</li>` : ''}
 <li><strong>Your Ireland map.</strong> If you tick off drives or counties, that list is saved in your browser's local storage on your device so it is there next time. It is never sent to us, and clearing your browser data removes it.</li>
 </ul>
 ${config.newsletter && config.newsletter.action ? `<h2>Newsletter</h2>

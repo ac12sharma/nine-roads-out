@@ -3,12 +3,34 @@
 import { esc, fmtMins, sunTimes, fmtClock, DUBLIN } from '../shared/format.mjs';
 import { normalise, fromDrives, statsOf, levelLine, nextLine, shareText, TOTAL } from '../shared/levels.mjs';
 import { START, newContext, greeting, reply } from '../shared/planner.mjs';
+import { cleanEvent } from '../shared/events.mjs';
 (function(){
 'use strict';
 const $=(s,r)=>(r||document).querySelector(s);
 const $$=(s,r)=>Array.prototype.slice.call((r||document).querySelectorAll(s));
 const RM=window.matchMedia?window.matchMedia('(prefers-reduced-motion: reduce)'):{matches:false};
 const RAD=Math.PI/180;
+
+/* ---------- events: off unless site.config.mjs sets analytics.events (see docs/analytics.md) ----------
+   Sends the event name, the page path and a short label to this site's own /api/event. No cookies,
+   no identifiers, and nothing at all when the browser asks not to be tracked. */
+const EV=document.documentElement.getAttribute('data-events')||'';
+const optOut=navigator.globalPrivacyControl===true||navigator.doNotTrack==='1';
+function track(e,l){
+  if(!EV||optOut)return;
+  const ev=cleanEvent(e,location.pathname,l||'');if(!ev)return;
+  try{const b=JSON.stringify(ev);if(navigator.sendBeacon)navigator.sendBeacon(EV,new Blob([b],{type:'application/json'}));else fetch(EV,{method:'POST',body:b,keepalive:true,headers:{'content-type':'application/json'}});}catch(x){}
+}
+document.addEventListener('click',e=>{
+  const el=e.target instanceof Element?e.target.closest('a,button'):null;if(!el)return;
+  const href=el.getAttribute('href')||'';
+  if(el.matches('a[rel~="sponsored"]')){try{track('sponsored_click',new URL(href,location.href).hostname.replace(/^www\./,''));}catch(x){}return;}
+  if(el.hasAttribute('data-track')){track(el.getAttribute('data-track'),el.getAttribute('data-track-l'));return;}
+  const sh=el.getAttribute('data-share');
+  if(sh)track('share',sh.indexOf('native')>-1?'native':'copy');
+  else if(href.indexOf('https://wa.me/')===0)track('share','whatsapp');
+},true);
+$$('form.news-form:not([data-demo])').forEach(f=>f.addEventListener('submit',()=>track('newsletter_submit',f.getAttribute('data-where'))));
 
 /* ---------- menu ---------- */
 $$('.menu-panel a').forEach(a=>a.addEventListener('click',()=>{const d=a.closest('details');if(d)d.removeAttribute('open');}));
@@ -82,7 +104,7 @@ function refreshLevels(){
 }
 $$('.done-b').forEach(b=>{
   const msg=b.parentElement.querySelector('[data-done-msg]');if(msg)msg.__orig=msg.innerHTML;
-  b.addEventListener('click',()=>toggleDrive(b.getAttribute('data-done'),b.getAttribute('data-counties').split('|'),b.getAttribute('aria-pressed')!=='true'));
+  b.addEventListener('click',()=>{const on=b.getAttribute('aria-pressed')!=='true';toggleDrive(b.getAttribute('data-done'),b.getAttribute('data-counties').split('|'),on);if(on)track('drive_done',b.getAttribute('data-done'));});
 });
 window.addEventListener('storage',e=>{if(e.key===KEY)refreshLevels();});
 
@@ -241,7 +263,7 @@ function planner(){
     $$('body > *').forEach(el=>{if(el!==host&&el.tagName!=='SCRIPT'){if(modal)el.setAttribute('inert','');else el.removeAttribute('inert');}});
   };
   if(FULL.addEventListener)FULL.addEventListener('change',()=>setModal(!panel.hidden));
-  function open(){panel.hidden=false;launch.setAttribute('aria-expanded','true');host.classList.add('is-open');setModal(true);if(!started){started=true;load().then(greet).catch(greet);}setTimeout(()=>input.focus(),60);}
+  function open(){if(panel.hidden)track('planner_open');panel.hidden=false;launch.setAttribute('aria-expanded','true');host.classList.add('is-open');setModal(true);if(!started){started=true;load().then(greet).catch(greet);}setTimeout(()=>input.focus(),60);}
   function close(){panel.hidden=true;launch.setAttribute('aria-expanded','false');host.classList.remove('is-open');setModal(false);launch.focus();}
   launch.addEventListener('click',()=>{if(panel.hidden)open();else close();});
   $('.pl-close',host).addEventListener('click',close);
@@ -267,7 +289,7 @@ function planner(){
     bot(r.text,(r.cards||[]).map(card).join('')+(r.eats||[]).map(e=>eatRow(e.r,e.t)).join('')+(r.notes||[]).map(n=>'<p class="pl-more">'+n+'</p>').join('')+chips(r.chips));
   }
   function greet(){show(greeting(D,ctx,PAGE_TRIP));}
-  function respond(q){show(reply(q,D,ctx,env));}
+  function respond(q){const r=reply(q,D,ctx,env);track('planner_answer',r.kind);show(r);}
   function ai(){
     const typing=add('pl-bot pl-typing','<p><span></span><span></span><span></span></p>');
     fetch(AI,{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({messages:history.slice(-8)})})

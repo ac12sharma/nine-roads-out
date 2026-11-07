@@ -9,3 +9,7 @@ interface HTMLElement {
   /** Timer for a status message that clears itself (say() and tell() in app.js). */
   __t?: ReturnType<typeof setTimeout>;
 }
+interface Navigator {
+  /** Global Privacy Control (https://globalprivacycontrol.org/): true when the visitor opts out of tracking. */
+  readonly globalPrivacyControl?: boolean;
+}
