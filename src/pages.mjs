@@ -5,6 +5,7 @@ import { TYPES, mapsSearch } from './content/restaurants.mjs';
 import { THEMES, NOCAR } from './content/guides.mjs';
 import { TOTAL, levelFor, levelBands } from './shared/levels.mjs';
 import { FAQS } from './content/faqs.mjs';
+import { ARTICLES } from './content/articles.mjs';
 
 export function createRenderer({ config, trips, assets, preview, restaurants, irelandMap, photos = {}, coords = {} }) {
   const adsOn = !!config.adsense.client && !preview;
@@ -314,6 +315,7 @@ ${photoGallery(t, u)}
 ${eatSection(t)}
 ${faqSection(t.id)}
 <p class="th-links"><span>More like this:</span>${themeLinks(t, u)}</p>
+${relatedLine([...ARTICLES.filter((ar) => ar.related.includes(path)).map((ar) => `/${ar.slug}/`), '/best-time-of-year-for-each-drive/'].filter((p, i, l) => l.indexOf(p) === i), u, 'Guides')}
 ${newsletter('trip', u)}
 <p class="print-only print-foot">${esc(abs(path).replace(/^https?:\/\//, ''))}. Drive times are approximate. Check opening times and road conditions before you set off.</p>
 </div>
@@ -379,11 +381,11 @@ ${adSlot('footer', 'wrap')}
     return `<p class="gpx"><a href="${u('/gpx/' + t.slug + '.gpx')}" download>Download the stops as GPX</a><span>${ok} of ${list.length} stops, for a sat-nav or mapping app.${ok < list.length ? ' Stops without a verified position are left out.' : ''}</span></p>`;
   }
 
-  function prosePage({ path, title, h1, lede, desc, content, active = '', jsonld = [] }) {
+  function prosePage({ path, title, h1, lede, desc, content, active = '', jsonld = [], ogImage = '/og/home.jpg', ogType = 'website', related = [] }) {
     const u = urlFor(1);
     const body = `<nav class="wrap crumbs" aria-label="Breadcrumb"><ol><li><a href="${u('/')}">Home</a></li><li aria-current="page">${esc(h1)}</li></ol></nav>
-<article class="wrap prose-page"><header class="prose-head"><h1>${esc(h1)}</h1>${lede ? `<p class="lede">${lede}</p>` : ''}</header><div class="prose">${content(u)}</div></article>`;
-    return layout({ path, depth: 1, title: `${title} | ${config.name}`, desc, body, active, jsonld });
+<article class="wrap prose-page"><header class="prose-head"><h1>${esc(h1)}</h1>${lede ? `<p class="lede">${lede}</p>` : ''}</header><div class="prose">${content(u)}${relatedLine(related, u)}</div></article>`;
+    return layout({ path, depth: 1, title: `${title} | ${config.name}`, desc, body, active, jsonld, ogImage, ogType });
   }
 
   function guide() {
@@ -394,12 +396,12 @@ ${adSlot('footer', 'wrap')}
       return `<tr><th scope="row">${d.toLocaleDateString('en-IE', { month: 'long', timeZone: 'UTC' })}</th><td>${fmtClock(s.rise)}</td><td>${fmtClock(s.set)}</td><td>${fmtMins((s.set.getTime() - s.rise.getTime()) / 6e4)}</td></tr>`;
     }).join('');
     return prosePage({
-      path: '/driving-guide/', active: 'guide',
+      path: '/driving-guide/', active: 'guide', related: ['/best-time-of-year-for-each-drive/', '/car-hire-dublin/', '/day-trips-from-dublin-without-a-car/'],
       title: 'Driving from Dublin: tolls, speed limits, road signs and daylight',
       h1: 'Driving from Dublin: the day-trip guide',
       lede: 'What makes a day drive from Dublin go smoothly: tolls, speed limits, how to read Irish road signs, narrow roads, weather and how much daylight you will get.',
       desc: 'A practical guide to day drives from Dublin: the M50 toll, Irish speed limits, how to read road signs, narrow country roads, weather and daylight by month.',
-      jsonld: [{ '@context': 'https://schema.org', '@type': 'Article', headline: 'Driving from Dublin: the day-trip guide', author: { '@type': 'Person', name: config.owner.name }, publisher: { '@type': 'Organization', name: config.name }, inLanguage: 'en-IE', url: abs('/driving-guide/') }],
+      jsonld: [{ '@context': 'https://schema.org', '@type': 'Article', headline: 'Driving from Dublin: the day-trip guide', author: { '@type': 'Person', name: config.owner.name }, publisher: { '@type': 'Organization', name: config.name }, inLanguage: 'en-IE', url: abs('/driving-guide/'), image: abs('/og/home.jpg') }],
       content: (u) => `
 <h2 id="tolls">Tolls</h2>
 <p>The M50 ring road around Dublin has a barrier-free toll between junctions 6 and 7. There is no booth: cameras read your number plate and you pay online at <a href="https://www.eflow.ie/" target="_blank" rel="noopener">eflow.ie</a> by 8pm the next day. If you are driving a hire car, ask at the desk how the company handles it.</p>
@@ -457,7 +459,7 @@ ${adSlot('guide')}
 
   function about() {
     return prosePage({
-      path: '/about/', active: 'about', title: 'About', h1: 'About Nine Roads Out',
+      path: '/about/', active: 'about', related: ['/driving-guide/', '/how-much-of-ireland/', '/contact/', '/advertise/'], title: 'About', h1: 'About Nine Roads Out',
       lede: `Nine Roads Out is an independent guide to the most beautiful day drives from Dublin city, made in ${esc(config.owner.city)} by ${esc(config.owner.name)}.`,
       desc: 'Who makes Nine Roads Out, how the drives are chosen and checked, and how the site is funded.',
       content: (u) => `
@@ -477,7 +479,7 @@ ${adSlot('guide')}
   function contact() {
     const e = config.contactEmail;
     return prosePage({
-      path: '/contact/', title: 'Contact', h1: 'Contact',
+      path: '/contact/', related: ['/about/', '/advertise/', '/privacy/'], title: 'Contact', h1: 'Contact',
       lede: 'Corrections, suggestions and partnership enquiries are all welcome.',
       desc: 'How to contact Nine Roads Out with corrections, suggestions or partnership enquiries.',
       content: () => (e
@@ -497,7 +499,7 @@ ${adSlot('guide')}
     const cfToken = !!config.analytics.cloudflareToken;
     const thirdParty = [adsOn && "Google's ad script", cfToken && "Cloudflare's analytics script"].filter(Boolean);
     return prosePage({
-      path: '/privacy/', title: 'Privacy and cookies', h1: 'Privacy and cookies',
+      path: '/privacy/', related: ['/terms/', '/contact/', '/about/'], title: 'Privacy and cookies', h1: 'Privacy and cookies',
       lede: `This policy explains what information this site collects, why, and the choices you have. Last updated ${esc(config.checked)}.`,
       desc: 'How Nine Roads Out handles personal data, advertising cookies and affiliate links, and your rights under GDPR.',
       content: (u) => `
@@ -530,7 +532,7 @@ ${adsOn ? `<p>This site shows ads served by Google AdSense. If you are in the Eu
 
   function terms() {
     return prosePage({
-      path: '/terms/', title: 'Terms of use', h1: 'Terms of use',
+      path: '/terms/', related: ['/privacy/', '/contact/', '/about/'], title: 'Terms of use', h1: 'Terms of use',
       lede: `By using ${esc(config.name)} you agree to these terms. Last updated ${esc(config.checked)}.`,
       desc: 'Terms of use for Nine Roads Out, including accuracy of information, safety, affiliate links and copyright.',
       content: () => `
@@ -643,7 +645,7 @@ ${newsletter('theme', u)}
       h1: 'Hiring a car in Dublin for a day trip',
       lede: 'Most of the drives on this site need a car. Here is what to sort out before you book one in Dublin: the insurance excess, the M50 toll, manual or automatic, and what to check before you drive off.',
       desc: 'What to know before hiring a car in Dublin for a day trip: insurance and the excess, credit card cover, the M50 toll in a hire car, licences, Northern Ireland and fuel.',
-      jsonld: [...faqJsonld('car-hire'), { '@context': 'https://schema.org', '@type': 'Article', headline: 'Hiring a car in Dublin for a day trip', author: { '@type': 'Person', name: config.owner.name }, publisher: { '@type': 'Organization', name: config.name }, inLanguage: 'en-IE', url: abs('/car-hire-dublin/') }],
+      jsonld: [...faqJsonld('car-hire'), { '@context': 'https://schema.org', '@type': 'Article', headline: 'Hiring a car in Dublin for a day trip', author: { '@type': 'Person', name: config.owner.name }, publisher: { '@type': 'Organization', name: config.name }, inLanguage: 'en-IE', url: abs('/car-hire-dublin/'), image: abs('/og/home.jpg') }],
       content: (u) => `
 ${cta('Compare prices from the big rental companies in one search.')}
 <h2 id="where">Airport or city?</h2>
@@ -730,7 +732,7 @@ ${cta('Compare car hire in Dublin')}
       h1: 'No car? Day trips from Dublin without driving',
       lede: 'Some of the nine drives work well by bus or on a guided tour. Others really need a car. Here is which is which, and the simplest way to do each one.',
       desc: 'Which day trips from Dublin work without a car: the bus to Glendalough, Newgrange tours, getting to Carlingford, Tramore and Cashel, and the drives that need a car.',
-      jsonld: [{ '@context': 'https://schema.org', '@type': 'Article', headline: 'Day trips from Dublin without a car', author: { '@type': 'Person', name: config.owner.name }, publisher: { '@type': 'Organization', name: config.name }, inLanguage: 'en-IE', url: abs('/day-trips-from-dublin-without-a-car/') }],
+      jsonld: [{ '@context': 'https://schema.org', '@type': 'Article', headline: 'Day trips from Dublin without a car', author: { '@type': 'Person', name: config.owner.name }, publisher: { '@type': 'Organization', name: config.name }, inLanguage: 'en-IE', url: abs('/day-trips-from-dublin-without-a-car/'), image: abs('/og/home.jpg') }],
       content: (u) => `
 <table class="t"><thead><tr><th scope="col">Drive</th><th scope="col">Without a car</th></tr></thead><tbody>${rows(u)}</tbody></table>
 <p>For buses and trains, the <a href="https://www.transportforireland.ie/" target="_blank" rel="noopener">TFI Journey Planner</a> has current times for every operator. Timetables change, so check it the day before.</p>
@@ -740,7 +742,7 @@ ${sourcesList([
   ['Heritage Ireland: Brú na Bóinne', 'https://heritageireland.ie/places-to-visit/bru-na-boinne-visitor-centre-newgrange-knowth-and-dowth/'],
   ['Bus Éireann: route 161, Dundalk to Newry via Carlingford', 'https://www.buseireann.ie/routes-and-timetables/161'],
   ['Irish Rail: timetables by route', 'https://www.irishrail.ie/en-ie/train-timetables/timetables-by-route'],
-  ['Transport for Ireland: Waterford city bus services', 'https://www.transportforireland.ie/getting-around/network-maps/waterford-city-bus-services/'],
+  ['Transport for Ireland: Waterford city bus services', 'https://www.transportforireland.ie/plan-a-journey/network-maps/waterford-city-bus-services/'],
   ['Heritage Ireland: Loughcrew', 'https://heritageireland.ie/places-to-visit/loughcrew-megalithic-cemetery/'],
 ], '2026-11-07')}
 <div class="cta-box"><p class="cta-t">Hire a car for the day</p><p>A one-day hire opens up all nine drives. <a href="${u('/car-hire-dublin/')}">Read what to know first</a>, then compare prices.</p><a class="btn" href="${esc(A.carHire.url)}" target="_blank" rel="sponsored noopener">Compare car hire on ${esc(A.carHire.partner)}</a><p class="small">Affiliate links: if you book through them, we may earn a commission at no extra cost to you.</p></div>`,
@@ -751,7 +753,7 @@ ${sourcesList([
   function advertise() {
     const e = config.contactEmail;
     return prosePage({
-      path: '/advertise/', title: 'Advertise with us', h1: 'Advertise with Nine Roads Out',
+      path: '/advertise/', related: ['/about/', '/contact/', '/coastal-drives-from-dublin/'], title: 'Advertise with us', h1: 'Advertise with Nine Roads Out',
       lede: `${esc(config.name)} is read by people planning a day out by car from Dublin, usually in the days before they go. If your business is on or near one of the nine routes, here is how to reach them.`,
       desc: 'Featured listings, newsletter sponsorship and sponsored guides for cafés, pubs, restaurants, places to stay and attractions on the day drives from Dublin.',
       content: (u) => `
@@ -780,5 +782,41 @@ ${e ? `<p>Email <a href="mailto:${esc(e)}?subject=Advertising">${esc(e)}</a> wit
     return layout({ path: '/404.html', depth: 0, title: `Page not found | ${config.name}`, desc: 'This page could not be found.', body });
   }
 
-  return { home, trip, guide, about, contact, privacy, terms, notFound, ireland, theme, carHire, noCar, advertise };
+  /** "Related:" line of links at the end of a page. */
+  function relatedLine(/** @type {string[]} */ paths, /** @type {(p: string) => string} */ u, label = 'Related') {
+    if (!paths.length) return '';
+    return `<p class="th-links"><span>${esc(label)}:</span>${paths.map((p) => `<a href="${u(p)}">${esc(pageLabel(p))}</a>`).join('')}</p>`;
+  }
+
+  /** A page's name for "Related" lists, from its path. */
+  function pageLabel(/** @type {string} */ p) {
+    const t = trips.find((x) => p === tripPath(x));
+    if (t) return `${t.en} drive`;
+    const th = THEMES.find((x) => p === `/${x.slug}/`);
+    if (th) return th.h1;
+    const ar = ARTICLES.find((x) => p === `/${x.slug}/`);
+    if (ar) return ar.h1;
+    /** @type {Record<string, string>} */
+    const fixed = { '/about/': 'About Nine Roads Out', '/contact/': 'Contact', '/privacy/': 'Privacy and cookies', '/terms/': 'Terms of use', '/advertise/': 'Advertise with us', '/driving-guide/': 'Driving guide: tolls, speed limits, signs and daylight', '/car-hire-dublin/': 'Hiring a car in Dublin', '/day-trips-from-dublin-without-a-car/': 'Day trips from Dublin without a car', '/how-much-of-ireland/': 'How much of Ireland have you driven?' };
+    if (fixed[p]) return fixed[p];
+    throw new Error(`No label for related page ${p}`);
+  }
+
+  /** One of the long-form guides in src/content/articles.mjs. */
+  function article(/** @type {import('./content/articles.mjs').Article} */ ar) {
+    const path = `/${ar.slug}/`;
+    return prosePage({
+      path, active: 'drives', title: ar.title, h1: ar.h1, lede: ar.lede, desc: ar.desc, ogImage: `/og/${ar.og}.jpg`, ogType: 'article',
+      jsonld: [
+        { '@context': 'https://schema.org', '@type': 'Article', headline: ar.h1, description: ar.desc, image: abs(`/og/${ar.og}.jpg`), dateModified: ar.checked, author: { '@type': 'Person', name: config.owner.name }, publisher: { '@type': 'Organization', name: config.name }, inLanguage: 'en-IE', url: abs(path) },
+        { '@context': 'https://schema.org', '@type': 'BreadcrumbList', itemListElement: [{ '@type': 'ListItem', position: 1, name: 'Home', item: abs('/') }, { '@type': 'ListItem', position: 2, name: ar.h1, item: abs(path) }] },
+      ],
+      content: (u) => `${ar.body({ u, fmtMins, fmtClock, sun: (d) => sunTimes(d), trips })}
+${adSlot('guide')}
+<h2 id="related">Related</h2><ul class="related">${ar.related.map((p) => `<li><a href="${u(p)}">${esc(pageLabel(p))}</a></li>`).join('')}</ul>
+${sourcesList(ar.sources, ar.checked)}`,
+    });
+  }
+
+  return { home, trip, guide, about, contact, privacy, terms, notFound, ireland, theme, carHire, noCar, advertise, article };
 }

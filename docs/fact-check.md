@@ -28,7 +28,7 @@ Citizens Information refuses automated requests, so it was read in a browser. Ev
 | --- | --- | --- | --- |
 | St Kevin's Bus from St Stephen's Green North, all year except Christmas Day; morning bus out, late-afternoon return | [St Kevin's Bus timetable](https://www.glendaloughbus.com/timetable.aspx) | Supported; the bus out is at 11.00 | "Late-morning bus" |
 | The 161 runs Dundalk–Carlingford–Newry | [Bus Éireann 161](https://www.buseireann.ie/routes-and-timetables/161) | Supported | Link added |
-| Trains from Heuston to Waterford; 360 and 360A buses to Tramore | [Irish Rail timetables](https://www.irishrail.ie/en-ie/train-timetables/timetables-by-route), [TFI Waterford](https://www.transportforireland.ie/getting-around/network-maps/waterford-city-bus-services/) | Supported | Links added |
+| Trains from Heuston to Waterford; 360 and 360A buses to Tramore | [Irish Rail timetables](https://www.irishrail.ie/en-ie/train-timetables/timetables-by-route), [TFI Waterford](https://www.transportforireland.ie/plan-a-journey/network-maps/waterford-city-bus-services/) | Supported | Links added |
 | Loughcrew: "a car park for about ten cars", "tours rarely come here" | [Heritage Ireland: Loughcrew](https://heritageireland.ie/places-to-visit/loughcrew-megalithic-cemetery/) | Not stated. The page does say the approach road is very narrow, 3 km east of Oldcastle. | Replaced with what the page says |
 
 ## Drive pages: "Know before you go", read 7 November 2026

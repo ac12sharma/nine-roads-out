@@ -268,6 +268,7 @@ h1,h2,h3{text-wrap:balance}
 .faq-src,.sources a{text-decoration:underline;text-underline-offset:3px;text-decoration-thickness:1px}
 .faq-src{font:600 14px/1.4 var(--display);white-space:nowrap}
 .src-note{color:var(--ink-2)}
+.related,.sources{padding-left:1.2em}.related a{text-decoration:underline;text-underline-offset:3px;text-decoration-thickness:1px}
 .checked{margin:12px 0 0;color:var(--ink-2);font-size:15px}
 .gpx{margin:14px 0 0;font:600 14px/1.4 var(--display)}.gpx a{text-decoration:underline;text-underline-offset:3px}.gpx span{display:block;margin-top:2px;font-weight:400;color:var(--ink-2)}
 .prose a{text-underline-offset:3px}

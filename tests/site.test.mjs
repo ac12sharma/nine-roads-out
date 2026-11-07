@@ -101,6 +101,31 @@ test('every page has a title, a description, a canonical URL and one h1', () => 
   assert.deepEqual(problems, []);
 });
 
+test('every page links to at least three other pages from its main content', () => {
+  const thin = [];
+  for (const [page, html] of pages) {
+    const main = (html.match(/<main[^>]*>([\s\S]*?)<\/main>/) || ['', ''])[1].replace(/<nav class="wrap crumbs"[\s\S]*?<\/nav>/, '');
+    const links = new Set([...main.matchAll(/href="(\/[^"#?]*)/g)].map((m) => m[1]).filter((p) => p !== page && p !== '/' && !/\.(gpx|jpg|webp|png|svg)$/.test(p)));
+    if (links.size < 3) thin.push(`${page} (${links.size})`);
+  }
+  assert.deepEqual(thin, []);
+});
+
+test('every long-form guide has at least 800 words, its sources and related pages', async () => {
+  const { ARTICLES } = await import('../src/content/articles.mjs');
+  assert.ok(ARTICLES.length >= 5);
+  for (const ar of ARTICLES) {
+    const html = pages.get(`/${ar.slug}/`);
+    assert.ok(html, `/${ar.slug}/ was not built`);
+    const body = (html.match(/<div class="prose">([\s\S]*?)<h2 id="related">/) || ['', ''])[1];
+    const words = body.replace(/<table[\s\S]*?<\/table>/g, ' ').replace(/<[^>]+>/g, ' ').replace(/&[a-z#0-9]+;/g, ' ').split(/\s+/).filter((w) => /[A-Za-z0-9]/.test(w)).length;
+    assert.ok(words >= 800, `/${ar.slug}/ has ${words} words, not counting tables`);
+    assert.ok(ar.sources.length >= 2 && ar.sources.every(([, u]) => u.startsWith('https://')), `/${ar.slug}/ needs at least two https sources`);
+    assert.ok(html.includes('<h2 id="sources">Sources</h2>'), `/${ar.slug}/ doesn't show its sources`);
+    assert.ok(ar.related.length >= 3, `/${ar.slug}/ needs three related pages`);
+  }
+});
+
 test('every drive has a GPX file with its verified stops', () => {
   for (const [page, html] of pages) {
     const m = html.match(/href="(\/gpx\/[a-z-]+\.gpx)"/);

@@ -15,6 +15,7 @@ import { gpxFor } from './gpx.mjs';
 import { createRenderer } from './pages.mjs';
 import { THEMES } from './content/guides.mjs';
 import { PHOTOS } from './content/photos.mjs';
+import { ARTICLES } from './content/articles.mjs';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const preview = process.argv.includes('--preview');
@@ -92,6 +93,7 @@ trips.forEach((t) => write(`gpx/${t.slug}.gpx`, gpxFor(t, coords[t.id] || [], `$
 write('driving-guide/index.html', r.guide());
 THEMES.forEach((th) => write(`${th.slug}/index.html`, r.theme(th)));
 write('car-hire-dublin/index.html', r.carHire());
+ARTICLES.forEach((ar) => write(`${ar.slug}/index.html`, r.article(ar)));
 write('day-trips-from-dublin-without-a-car/index.html', r.noCar());
 write('advertise/index.html', r.advertise());
 write('how-much-of-ireland/index.html', r.ireland());
@@ -102,7 +104,7 @@ write('terms/index.html', r.terms());
 write('404.html', r.notFound());
 
 // 5. Search, ads and hosting files.
-const urls = ['/', ...trips.map((t) => `/${t.slug}/`), ...THEMES.map((th) => `/${th.slug}/`), '/car-hire-dublin/', '/day-trips-from-dublin-without-a-car/', '/how-much-of-ireland/', '/driving-guide/', '/about/', '/advertise/', '/contact/', '/privacy/', '/terms/'];
+const urls = ['/', ...trips.map((t) => `/${t.slug}/`), ...THEMES.map((th) => `/${th.slug}/`), '/car-hire-dublin/', '/day-trips-from-dublin-without-a-car/', ...ARTICLES.map((ar) => `/${ar.slug}/`), '/how-much-of-ireland/', '/driving-guide/', '/about/', '/advertise/', '/contact/', '/privacy/', '/terms/'];
 // lastmod is the date of the last commit that changed the content behind each page, so search engines
 // only see a new date when something they'd care about changed. Uncommitted edits count as today.
 // Without git history (a shallow clone, or no .git) it is left out rather than guessed.
@@ -112,6 +114,7 @@ const SOURCES = {
   theme: ['src/content/guides.mjs', 'src/content/trips.mjs'],
   '/day-trips-from-dublin-without-a-car/': ['src/content/guides.mjs', 'src/content/trips.mjs', 'src/pages.mjs'],
   '/how-much-of-ireland/': ['src/content/trips.mjs', 'src/content/ireland-map.json'],
+  article: ['src/content/articles.mjs'],
 };
 function lastChanged(files) {
   try {
@@ -121,7 +124,7 @@ function lastChanged(files) {
     return git('log', '-1', '--format=%cs', '--', ...files);
   } catch { return ''; }
 }
-const sourcesFor = (u) => SOURCES[u] || (trips.some((t) => u === `/${t.slug}/`) ? SOURCES.trip : THEMES.some((th) => u === `/${th.slug}/`) ? SOURCES.theme : ['src/pages.mjs']);
+const sourcesFor = (u) => SOURCES[u] || (trips.some((t) => u === `/${t.slug}/`) ? SOURCES.trip : THEMES.some((th) => u === `/${th.slug}/`) ? SOURCES.theme : ARTICLES.some((ar) => u === `/${ar.slug}/`) ? SOURCES.article : ['src/pages.mjs']);
 const lastmod = (u) => { const d = lastChanged(sourcesFor(u)); return d ? `<lastmod>${d}</lastmod>` : ''; };
 write('sitemap.xml', `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${urls.map((u) => `  <url><loc>${config.siteUrl}${u}</loc>${lastmod(u)}</url>`).join('\n')}\n</urlset>\n`);
 write('robots.txt', preview ? 'User-agent: *\nDisallow: /\n' : `User-agent: *\nAllow: /\n\nSitemap: ${config.siteUrl}/sitemap.xml\n`);
