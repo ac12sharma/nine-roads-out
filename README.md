@@ -65,58 +65,11 @@ Results and history are in [docs/metrics.md](docs/metrics.md) and [docs/accessib
 
 ## Launch checklist
 
-The fastest way live: buy the domain and host the site on Cloudflare (free), uploading the ready-built folder. About 20 minutes.
+The site is hosted on Cloudflare Pages, built from GitHub, so every push to `main` redeploys it. Pages Functions (click events, AI answers) need the Git integration, so don't upload `dist` by hand.
 
-### 1. Make a Cloudflare account and buy the domain
+Every step that needs your account or a payment, in order, with the exact click paths and how each is checked: [docs/launch-checklist.md](docs/launch-checklist.md). Cloudflare Pages build settings: framework preset **None**, build command `npm run build`, build output directory `dist`. Node 22 comes from `.nvmrc`.
 
-Sign up at [cloudflare.com](https://dash.cloudflare.com/sign-up). Under **Domain Registration > Register Domains**, search for `nineroadsout.com` and buy it. It was about $11 a year when checked in October 2026, and Cloudflare sells domains at cost. If you pick a different name, change `siteUrl` in `site.config.mjs` and rebuild before uploading.
-
-Buy the domain before you launch: every page's canonical link and share card points at `siteUrl`.
-
-### 2. Upload the site
-
-Vercel's free Hobby plan does not allow ads or affiliate-led sites ([fair use guidelines](https://vercel.com/docs/limits/fair-use-guidelines)), so use Cloudflare Pages.
-
-1. In the Cloudflare dashboard, open **Workers & Pages**, choose **Create**, then the **Pages** tab, then **Upload assets** (the wording may shift slightly as Cloudflare updates its dashboard).
-2. Name the project `nineroadsout` and upload the contents of the `dist` folder, or the `nine-roads-out-upload.zip` file, which is the same thing.
-3. When it's deployed, open the project's **Custom domains** tab and add `nineroadsout.com`. Add `www.nineroadsout.com` too if you like.
-
-To update the site later, run `npm run build` and upload `dist` again as a new deployment.
-
-**Automatic deploys instead (recommended once you're editing regularly):** push this folder to a GitHub repository and create the Pages project with **Connect to Git** instead. Build command `node src/build.mjs`, output directory `dist`. Every push then redeploys the site, and it's required if you switch on the AI planner.
-
-Netlify (free) and Vercel Pro (paid) also work: `netlify.toml` and `vercel.json` already set the build. The `_headers` file sets long caching for fonts, scripts and images on Cloudflare and Netlify.
-
-### 3. Make the contact address work
-
-The site lists `hello@nineroadsout.com` (set in `contactEmail`). In Cloudflare, open the domain, then **Email > Email Routing**, and create `hello@` with your own inbox as the destination. It's free, and you reply from your normal email. AdSense reviewers look for a working contact route.
-
-### 4. Tell Google the site exists
-
-Add the domain in [Google Search Console](https://search.google.com/search-console), verify it (Cloudflare can add the DNS record for you), and submit `https://nineroadsout.com/sitemap.xml`. Do the same in [Bing Webmaster Tools](https://www.bing.com/webmasters), which can import from Search Console in one click.
-
-### 5. Apply for Google AdSense (not on day one)
-
-Wait until the site has some visitors from search and you've added a few more pages or your own photos. "Low value content" is a common reason small sites are turned down, and it's easier to be approved first time than to reapply.
-
-1. Apply at [adsense.google.com](https://adsense.google.com) with your domain. Google reviews the whole site, which can take from a few days to a few weeks.
-2. Paste your publisher ID (`ca-pub-…`) into `adsense.client` and redeploy. This adds the AdSense script, the verification tag and `ads.txt`.
-3. In AdSense, open **Privacy & messaging** and turn on the European regulations (GDPR) message. Visitors in the EEA, UK and Switzerland must consent before personalised ads, and this is Google's own certified consent tool, so you don't need anything else. The "Cookie settings" link in the footer reopens it.
-4. Either switch on **Auto ads**, or create ad units and paste their IDs into `adsense.slots`. They will appear in the reserved spaces: one on the home page, three on each drive page, and one each in the driving guide, the car hire guide and the theme pages.
-
-### 6. Join the affiliate programmes
-
-Sign up with the partners in `site.config.mjs` (Discover Cars, Booking.com, GetYourGuide) or your own choices. Paste each tracked link into `affiliates`, keeping `{q}` where the place name should go. Links already carry `rel="sponsored"`, and every booking box and the footer disclose that they are affiliate links.
-
-Do this on day one. Some programmes review your site before approving it, but they're generally less strict about traffic than AdSense, and the car hire guide is written to send people to car hire.
-
-### 7. Analytics
-
-Turn on Cloudflare Web Analytics for the Pages project. It is cookieless, so it needs no consent. If you host elsewhere, paste the token into `analytics.cloudflareToken`.
-
-### 8. Optional: newsletter
-
-Create a free list with Buttondown, Kit or Mailchimp, copy its embed form's action URL and email field name into `newsletter` in `site.config.mjs`, and rebuild. The sign-up box then appears on the home page, every drive page and the theme pages, and the Privacy page gains a newsletter section.
+`netlify.toml` and `vercel.json` set the same build for those hosts, but the site is tested on Cloudflare Pages, and the click events and AI answers only work there.
 
 ## Earning from the site
 
