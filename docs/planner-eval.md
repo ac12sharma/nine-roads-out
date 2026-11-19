@@ -28,8 +28,8 @@ The tuning set's score is optimistic, because the parser was changed to fix its 
 
 | Date | Parser | Tuning set | Held-out set | Overall |
 | --- | --- | ---: | ---: | ---: |
-| 6 Nov 2026 | As launched (commit `7ef3e43`) | 90 / 96 (93.8%) | not yet written | |
-| 6 Nov 2026 | After the fixes below (commit `26215ea`) | 96 / 96 (100%) | 25 / 28 (89.3%) | 121 / 124 (97.6%) |
+| 6 Nov 2026 | As launched (commit `57a3cc2`) | 90 / 96 (93.8%) | not yet written | |
+| 6 Nov 2026 | After the fixes below (commit `084ec63`) | 96 / 96 (100%) | 25 / 28 (89.3%) | 121 / 124 (97.6%) |
 
 ### What the first run found, and the fix for each
 
