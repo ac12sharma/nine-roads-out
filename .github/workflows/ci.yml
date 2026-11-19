@@ -87,6 +87,7 @@ jobs:
         with:
           name: lighthouse
           path: .lighthouseci
+          include-hidden-files: true   # .lighthouseci starts with a dot, which upload-artifact skips by default
           retention-days: 14
 
   links:

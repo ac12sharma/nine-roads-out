@@ -129,6 +129,7 @@ Measured on the launch-prep version, mobile, one change set at a time.
 | Local server gzips text, as Cloudflare does | HTML and CSS transfer about 70% smaller (site CSS 35 KB → 10 KB) |
 | Fonts, canvas, preload and gzip together | Home 59 → 87, Glendalough 85 → 99 (single runs) |
 | 720 px card images with `srcset`; home cards all lazy (they sit below the hero) | Home 87 → 92 (median of 3); home mobile page weight 646 → 491 KiB |
+| Hero and plate scenes drawn at most 24 times a second, with the film grain laid over them by CSS instead of blended into every frame, 19 November 2026 | Found by CI: on GitHub's runners the home page scored 63 to 65 (mobile), because they draw canvases without a GPU and each animation frame cost about 15 ms of main-thread work, which Lighthouse scales up to 60 ms long tasks. With the GPU switched off locally: home 73 → 93, `scenes.js` main-thread time 8.5 s → 1.7 s, TBT about 800 ms → under 100 ms. With a GPU: unchanged at 93. The grain looks the same (compared in screenshots). |
 | Photo galleries on seven drive pages (12 Wikimedia Commons photos, 1600 px and 800 px WebP, lazy-loaded), 7 November 2026 | `/glendalough/` mobile 99 → 97 and 228 → 459 KiB; `/cashel/` mobile 97, 379 KiB; `/copper/` mobile 98, 308 KiB; desktop 100 on all three (median of 3). Still within the budget. |
 
 ## Accessibility (axe-core 4, WCAG 2.2 AA + best practice)

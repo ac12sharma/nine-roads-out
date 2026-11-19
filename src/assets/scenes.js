@@ -453,35 +453,52 @@ class Plate{
     if(W===this.w&&H===this.h&&dpr===this.dpr)return true;
     this.paint(W,H,dpr);return true;
   }
-  frame(t){
+  frame(t,grain){
     if(!this.w)return;const ctx=this.ctx,W=this.w,H=this.h;
     ctx.setTransform(this.dpr,0,0,this.dpr,0,0);ctx.clearRect(0,0,W,H);
     if(this.s.sky)this.s.sky(ctx,W,H,t,this.st);
     ctx.drawImage(this.buf,0,0,W,H);
     if(this.s.anim)this.s.anim(ctx,W,H,t,this.st);
-    ctx.save();ctx.globalAlpha=.13;ctx.globalCompositeOperation='overlay';ctx.fillStyle=this.pat;ctx.fillRect(0,0,W,H);ctx.restore();
+    // The live page lays the grain over the canvas with CSS (.grain in site.css), so the browser composites
+    // it instead of the main thread blending it into every frame. Exported stills bake it in.
+    if(grain){ctx.save();ctx.globalAlpha=.13;ctx.globalCompositeOperation='overlay';ctx.fillStyle=this.pat;ctx.fillRect(0,0,W,H);ctx.restore();}
     if(!this.live){this.live=true;this.c.classList.add('is-live');}
   }
 }
 /* Used by scripts/render-images.mjs to export still frames at t=0, matching what the live canvas starts from. */
-function renderStill(canvas,name,W,H,dpr,t){const p=new Plate(canvas,S[name]);p.paint(W,H,dpr||1);p.frame(t||0);return canvas;}
+function renderStill(canvas,name,W,H,dpr,t){const p=new Plate(canvas,S[name]);p.paint(W,H,dpr||1);p.frame(t||0,true);return canvas;}
 window.NRO_SCENES={names:Object.keys(S),renderStill:renderStill};
 
-const plates=[];let raf=0,t0=0;
+/* The scenes move slowly (mist, water, light), so they're drawn at most FPS times a second rather than at
+   the screen's full rate. Each frame redraws the whole canvas, which costs little on a GPU but can take
+   15 ms or more where the browser draws in software, and several times that on a slower phone. Drawing
+   fewer frames keeps the page responsive there. If frames still arrive far apart (the device can't keep
+   up even so), the scenes stop and hold the frame they last drew. */
+const FPS=24,FRAME_MS=1000/FPS,SAMPLE=6;
+const plates=[];let raf=0,t0=0,last=0,gap=0,seen=0,still=false;
 function loop(now){
-  raf=0;if(!t0)t0=now;const moving=!document.hidden;const t=(now-t0)/1000;let again=false,budget=1;
+  raf=0;if(!t0)t0=now;const moving=!document.hidden;const t=(now-t0)/1000;let again=false,budget=1,drew=false;
+  const due=now-last>=FRAME_MS-2;
   for(const p of plates){
+    const animates=!still&&(p.s.anim||p.s.sky);
     if(p.dirty&&p.near){if(budget>0){budget--;if(p.resize())p.frame(t);p.dirty=false;}else again=true;}
-    else if(!p.dirty&&moving&&p.visible&&(p.s.anim||p.s.sky))p.frame(t);
-    if(moving&&p.visible&&(p.s.anim||p.s.sky))again=true;
+    else if(due&&!p.dirty&&moving&&p.visible&&animates){p.frame(t);drew=true;}
+    if(moving&&p.visible&&animates)again=true;
   }
-  if(again)raf=requestAnimationFrame(loop);
+  if(drew){
+    // Only count gaps between consecutive animation frames, not the pause after the page was hidden.
+    if(last&&now-last<1000){gap=seen?gap*.7+(now-last)*.3:now-last;if(++seen>=SAMPLE&&gap>FRAME_MS*2)still=true;}
+    last=now;
+  }else if(!moving)last=0;
+  if(again&&!still)raf=requestAnimationFrame(loop);
 }
 function kick(){if(!raf)raf=requestAnimationFrame(loop);}
 function boot(){
   if(RM.matches||window.NRO_NO_BOOT)return; /* still images already on the page cover reduced-motion visitors */
   document.querySelectorAll('canvas[data-scene]').forEach(c=>{const s=S[c.getAttribute('data-scene')];if(s){const p=new Plate(c,s);c.__plate=p;plates.push(p);}});
   if(!plates.length)return;
+  const grain='url('+grainCanvas().toDataURL()+')';
+  plates.forEach(p=>{const g=document.createElement('div');g.className='grain';g.style.backgroundImage=grain;p.c.after(g);});
   if('ResizeObserver' in window){const ro=new ResizeObserver(es=>{es.forEach(e=>{if(e.target.__plate)e.target.__plate.dirty=true;});kick();});plates.forEach(p=>ro.observe(p.c));}
   if('IntersectionObserver' in window){
     const vis=new IntersectionObserver(es=>{es.forEach(e=>{if(e.target.__plate)e.target.__plate.visible=e.isIntersecting;});kick();},{rootMargin:'60px'});
