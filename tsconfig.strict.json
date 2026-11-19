@@ -1,0 +1,6 @@
+{
+  // The shared logic (planner, levels, formatting) and the bundler, checked with every strict option.
+  "extends": "./tsconfig.json",
+  "compilerOptions": { "strict": true, "noImplicitAny": true, "strictNullChecks": true },
+  "include": ["src/shared/**/*.mjs", "src/bundle.mjs", "src/data.mjs"]
+}

@@ -1,0 +1,104 @@
+# Checks every push and pull request. Each job is a separate status on GitHub.
+#   check       type check, unit and content tests, planner evaluation, build, HTML validation,
+#               structured data and search metadata (scripts/check-seo.mjs)
+#   browser     axe-core accessibility and keyboard checks on every page at phone and desktop widths
+#   lighthouse  Lighthouse CI on six key pages, median of three runs, against the budget in lighthouserc.json
+#   links       external links, weekly and on demand (other people's sites go down; that shouldn't block a push)
+name: CI
+
+on:
+  push:
+    branches: [main, launch]
+  pull_request:
+  schedule:
+    - cron: '0 6 * * 1'   # Mondays 06:00 UTC: external link check
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  check:
+    if: github.event_name != 'schedule'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0   # full history, so the sitemap gets real lastmod dates
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run typecheck
+      - run: npm test
+      - run: npm run build
+      - run: npm run validate-html
+      - run: npm run check-seo
+      - uses: actions/upload-artifact@v7
+        with:
+          name: dist
+          path: dist
+          retention-days: 7
+
+  browser:
+    needs: check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+      - run: npm run build
+      - run: node scripts/audit-pages.mjs --json audit.json
+      - run: node scripts/page-weight.mjs >> "$GITHUB_STEP_SUMMARY"
+      - if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: audit
+          path: audit.json
+          retention-days: 7
+
+  lighthouse:
+    needs: check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run build
+      - run: npx --yes @lhci/cli@0.15.1 autorun
+      - if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: lighthouse
+          path: .lighthouseci
+          include-hidden-files: true   # .lighthouseci starts with a dot, which upload-artifact skips by default
+          retention-days: 14
+
+  links:
+    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run build
+      - run: node scripts/check-links.mjs

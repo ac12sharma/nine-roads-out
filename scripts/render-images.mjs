@@ -1,5 +1,6 @@
 // Renders still frames of every scene (WebP) plus share cards and icons, using the same scenes.js the site runs.
 // Needs Playwright: `npm i -D playwright && npx playwright install chromium`, then `npm run images`.
+// `npm run images -- --only card-sm` re-renders only the scene stills whose file name contains that text.
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
@@ -10,7 +11,9 @@ import { bearingOf, windOf, fmtMins } from '../src/lib.mjs';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const pub = path.join(root, 'public');
-const fontUrl = (f) => pathToFileURL(path.join(pub, 'fonts', f)).href;
+const only = process.argv.includes('--only') ? process.argv[process.argv.indexOf('--only') + 1] : null;
+// The full variable fonts from fonts-src/: share cards use widths and weights the site's slimmed copies drop.
+const fontUrl = (f) => pathToFileURL(path.join(root, 'fonts-src', f)).href;
 const harness = path.join(os.tmpdir(), 'nro-harness.html');
 fs.writeFileSync(harness, `<!doctype html><html><head><meta charset="utf-8"><style>
 @font-face{font-family:"Archivo";src:url(${fontUrl('archivo.woff2')}) format("woff2");font-weight:100 900;font-stretch:62% 125%}
@@ -35,7 +38,8 @@ await page.goto(pathToFileURL(harness).href);
 await page.evaluate(() => document.fonts.ready);
 
 async function still(scene, w, h, file, q = 0.78) {
-  const b64 = await page.evaluate(([s, W, H, Q]) => {
+  if (only && !file.includes(only)) return;
+  const b64 = await page.evaluate((/** @type {[string, number, number, number]} */ [s, W, H, Q]) => {
     const c = document.createElement('canvas');
     window.NRO_SCENES.renderStill(c, s, W, H, 1, 0);
     return c.toDataURL('image/webp', Q).split(',')[1];
@@ -51,7 +55,9 @@ for (const t of TRIPS) {
   await still(t.scene, 1600, 700, `${t.id}-plate.webp`);
   await still(t.scene, 900, 675, `${t.id}-plate-sm.webp`, 0.72);
   await still(t.scene, 960, 640, `${t.id}-card.webp`, 0.7);
+  await still(t.scene, 720, 480, `${t.id}-card-sm.webp`, 0.7); // phones: srcset picks this up to 720 device pixels
 }
+if (only) { await browser.close(); console.log(`Rendered scene stills matching "${only}".`); process.exit(0); }
 
 async function og(scene, ga, en, meta, file) {
   await page.setViewportSize({ width: 1200, height: 630 });
@@ -86,7 +92,7 @@ for (const t of TRIPS) {
   await page.locator('.og').screenshot({ path: path.join(pub, 'og', 'ireland.jpg'), type: 'jpeg', quality: 88 });
 }
 
-for (const [size, file] of [[180, 'apple-touch-icon.png'], [192, 'icon-192.png'], [512, 'icon-512.png']]) {
+for (const [size, file] of /** @type {[number, string][]} */ ([[180, 'apple-touch-icon.png'], [192, 'icon-192.png'], [512, 'icon-512.png']])) {
   await page.setViewportSize({ width: size, height: size });
   await page.evaluate((s) => {
     document.querySelectorAll('.og,.icon').forEach((n) => n.remove());

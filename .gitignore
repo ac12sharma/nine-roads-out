@@ -1,5 +1,9 @@
 node_modules/
 dist/
 preview/
+.lighthouseci/
 .DS_Store
-functions/
+/functions/
+
+# Private source material (CV, notes, raw photos). Never commit.
+reference/

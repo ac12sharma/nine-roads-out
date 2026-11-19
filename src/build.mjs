@@ -1,21 +1,26 @@
 // Builds the static site into ./dist (or ./preview with --preview). No dependencies: Node 18+ only.
 //   npm run build     -> dist/   (deploy this folder)
 //   npm run preview   -> preview/ (relative links, ad spaces shown as placeholders)
+//   node src/build.mjs --out <dir>   -> any folder (the tests build into a temporary one)
 import fs from 'node:fs';
 import path from 'node:path';
 import crypto from 'node:crypto';
+import { execFileSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import config from '../site.config.mjs';
-import { TRIPS } from './content/trips.mjs';
-import { RESTAURANTS, mapsSearch } from './content/restaurants.mjs';
-import { bearingOf, windOf } from './lib.mjs';
+import { RESTAURANTS } from './content/restaurants.mjs';
+import { trips, plannerData } from './data.mjs';
+import { bundle } from './bundle.mjs';
+import { gpxFor } from './gpx.mjs';
 import { createRenderer } from './pages.mjs';
 import { THEMES } from './content/guides.mjs';
 import { PHOTOS } from './content/photos.mjs';
+import { ARTICLES } from './content/articles.mjs';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const preview = process.argv.includes('--preview');
-const out = path.join(root, preview ? 'preview' : 'dist');
+const outArg = process.argv.indexOf('--out');
+const out = outArg > -1 ? path.resolve(process.argv[outArg + 1]) : path.join(root, preview ? 'preview' : 'dist');
 
 fs.rmSync(out, { recursive: true, force: true });
 fs.mkdirSync(out, { recursive: true });
@@ -23,11 +28,12 @@ fs.mkdirSync(out, { recursive: true });
 // 1. Static files (fonts, images, icons) copied as they are.
 fs.cpSync(path.join(root, 'public'), out, { recursive: true });
 
-// 2. CSS and JS get a content hash in the filename so they can be cached forever.
+// 2. CSS and JS get a content hash in the filename so they can be cached forever. app.js imports
+//    src/shared/, so it is bundled into a single classic script first.
 const assets = {};
 fs.mkdirSync(path.join(out, 'assets'), { recursive: true });
 for (const [key, file] of [['css', 'site.css'], ['scenes', 'scenes.js'], ['app', 'app.js']]) {
-  const src = fs.readFileSync(path.join(root, 'src/assets', file));
+  const src = file === 'app.js' ? bundle(path.join(root, 'src/assets/app.js')) : fs.readFileSync(path.join(root, 'src/assets', file));
   const hash = crypto.createHash('sha1').update(src).digest('hex').slice(0, 10);
   const name = file.replace(/\.(\w+)$/, `.${hash}.$1`);
   fs.writeFileSync(path.join(out, 'assets', name), src);
@@ -35,17 +41,14 @@ for (const [key, file] of [['css', 'site.css'], ['scenes', 'scenes.js'], ['app',
 }
 
 // 3. Data for the trip planner and traveller levels, also content-hashed.
-const trips = TRIPS.map((t) => { const b = bearingOf(t); return { ...t, b, wind: windOf(b) }; });
-const chatData = {
-  trips: trips.map((t) => ({ id: t.id, slug: t.slug, en: t.en, ga: t.ga, via: t.via, county: t.county, mins: t.mins, drive: t.drive, km: t.km, wind: t.wind, tags: t.tags, best: t.best, desc: t.desc, blurb: (t.lede.match(/^.*?[.!?](\s|$)/) || [t.desc])[0].trim(), counties: t.counties, words: t.words, stops: t.stops.filter((x) => !x.home).map((x) => x.n) })),
-  eat: Object.fromEntries(Object.entries(RESTAURANTS).map(([k, v]) => [k, v.map((x) => ({ name: x.name, town: x.town, type: x.type, cuisine: x.cuisine, near: x.near, note: x.note, map: mapsSearch(x), url: x.url || '', featured: !!x.featured }))])),
-};
+const chatData = plannerData();
 {
   const json = JSON.stringify(chatData);
   const hash = crypto.createHash('sha1').update(json).digest('hex').slice(0, 10);
   fs.writeFileSync(path.join(out, 'assets', `data.${hash}.json`), json);
   assets.data = `/assets/data.${hash}.json`;
 }
+const coords = JSON.parse(fs.readFileSync(path.join(root, 'src/content/coords.json'), 'utf8'));
 const irelandMap = JSON.parse(fs.readFileSync(path.join(root, 'src/content/ireland-map.json'), 'utf8'));
 
 // Your own photos: files in public/photos/, listed in src/content/photos.mjs. The build reads each
@@ -75,20 +78,23 @@ for (const [id, list] of Object.entries(PHOTOS)) {
   photos[id] = list.map((p) => {
     const f = path.join(root, 'public/photos', p.file);
     if (!fs.existsSync(f)) throw new Error(`Photo listed in src/content/photos.mjs is missing: public/photos/${p.file}`);
+    if (p.small && !fs.existsSync(path.join(root, 'public/photos', p.small))) throw new Error(`Small copy listed in src/content/photos.mjs is missing: public/photos/${p.small}`);
     const [w, h] = imageSize(f);
     return { ...p, w, h };
   });
 }
 
 // 4. Pages.
-const r = createRenderer({ config, trips, assets, preview, restaurants: RESTAURANTS, irelandMap, photos });
+const r = createRenderer({ config, trips, assets, preview, restaurants: RESTAURANTS, irelandMap, photos, coords });
 const write = (rel, html) => { const f = path.join(out, rel); fs.mkdirSync(path.dirname(f), { recursive: true }); fs.writeFileSync(f, html); };
 
 write('index.html', r.home());
 trips.forEach((t, i) => write(`${t.slug}/index.html`, r.trip(t, i)));
+trips.forEach((t) => write(`gpx/${t.slug}.gpx`, gpxFor(t, coords[t.id] || [], `${config.siteUrl}/${t.slug}/`)));
 write('driving-guide/index.html', r.guide());
 THEMES.forEach((th) => write(`${th.slug}/index.html`, r.theme(th)));
 write('car-hire-dublin/index.html', r.carHire());
+ARTICLES.forEach((ar) => write(`${ar.slug}/index.html`, r.article(ar)));
 write('day-trips-from-dublin-without-a-car/index.html', r.noCar());
 write('advertise/index.html', r.advertise());
 write('how-much-of-ireland/index.html', r.ireland());
@@ -99,28 +105,60 @@ write('terms/index.html', r.terms());
 write('404.html', r.notFound());
 
 // 5. Search, ads and hosting files.
-const urls = ['/', ...trips.map((t) => `/${t.slug}/`), ...THEMES.map((th) => `/${th.slug}/`), '/car-hire-dublin/', '/day-trips-from-dublin-without-a-car/', '/how-much-of-ireland/', '/driving-guide/', '/about/', '/advertise/', '/contact/', '/privacy/', '/terms/'];
-const today = new Date().toISOString().slice(0, 10);
-write('sitemap.xml', `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${urls.map((u) => `  <url><loc>${config.siteUrl}${u}</loc><lastmod>${today}</lastmod></url>`).join('\n')}\n</urlset>\n`);
+const urls = ['/', ...trips.map((t) => `/${t.slug}/`), ...THEMES.map((th) => `/${th.slug}/`), '/car-hire-dublin/', '/day-trips-from-dublin-without-a-car/', ...ARTICLES.map((ar) => `/${ar.slug}/`), '/how-much-of-ireland/', '/driving-guide/', '/about/', '/advertise/', '/contact/', '/privacy/', '/terms/'];
+// lastmod is the date of the last commit that changed the content behind each page, so search engines
+// only see a new date when something they'd care about changed. Uncommitted edits count as today.
+// Without git history (a shallow clone, or no .git) it is left out rather than guessed.
+const SOURCES = {
+  '/': ['src/content/trips.mjs', 'src/content/guides.mjs'],
+  trip: ['src/content/trips.mjs', 'src/content/restaurants.mjs', 'src/content/photos.mjs'],
+  theme: ['src/content/guides.mjs', 'src/content/trips.mjs'],
+  '/day-trips-from-dublin-without-a-car/': ['src/content/guides.mjs', 'src/content/trips.mjs', 'src/pages.mjs'],
+  '/how-much-of-ireland/': ['src/content/trips.mjs', 'src/content/ireland-map.json'],
+  article: ['src/content/articles.mjs'],
+};
+function lastChanged(files) {
+  try {
+    const git = (...a) => execFileSync('git', a, { cwd: root, encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] }).trim();
+    if (git('rev-parse', '--is-shallow-repository') !== 'false') return '';
+    if (git('status', '--porcelain', '--', ...files)) return new Date().toISOString().slice(0, 10);
+    return git('log', '-1', '--format=%cs', '--', ...files);
+  } catch { return ''; }
+}
+const sourcesFor = (u) => SOURCES[u] || (trips.some((t) => u === `/${t.slug}/`) ? SOURCES.trip : THEMES.some((th) => u === `/${th.slug}/`) ? SOURCES.theme : ARTICLES.some((ar) => u === `/${ar.slug}/`) ? SOURCES.article : ['src/pages.mjs']);
+const lastmod = (u) => { const d = lastChanged(sourcesFor(u)); return d ? `<lastmod>${d}</lastmod>` : ''; };
+write('sitemap.xml', `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${urls.map((u) => `  <url><loc>${config.siteUrl}${u}</loc>${lastmod(u)}</url>`).join('\n')}\n</urlset>\n`);
 write('robots.txt', preview ? 'User-agent: *\nDisallow: /\n' : `User-agent: *\nAllow: /\n\nSitemap: ${config.siteUrl}/sitemap.xml\n`);
 if (config.adsense.client) write('ads.txt', `google.com, ${config.adsense.client.replace(/^ca-/, '')}, DIRECT, f08c47fec0942fa0\n`);
 write('site.webmanifest', JSON.stringify({ name: config.name, short_name: config.name, start_url: '/', display: 'browser', background_color: '#ECEFE8', theme_color: '#0B6A47', icons: [{ src: '/icon-192.png', sizes: '192x192', type: 'image/png' }, { src: '/icon-512.png', sizes: '512x512', type: 'image/png' }] }, null, 2));
 
-// 6. Optional AI back end for the trip planner (Cloudflare Pages Function).
+// 6. Optional Cloudflare Pages Functions: the AI back end for the trip planner, and the event recorder.
+//    Only a real build writes them (not the preview, and not test builds with --out).
+import { EVENTS } from './shared/events.mjs';
+const writesFunctions = !preview && outArg === -1;
 const fnFile = path.join(root, 'functions/api/chat.js');
-if (config.chat.ai && !preview) {
+if (config.chat.ai && writesFunctions) {
   const tpl = fs.readFileSync(path.join(root, 'src/functions/chat.js'), 'utf8');
   fs.mkdirSync(path.dirname(fnFile), { recursive: true });
-  fs.writeFileSync(fnFile, tpl.replace('/*__KNOWLEDGE__*/null', JSON.stringify({ model: config.chat.model, site: config.name, data: chatData })));
-} else if (!preview && fs.existsSync(fnFile)) {
+  fs.writeFileSync(fnFile, tpl.replace('/*__KNOWLEDGE__*/null', JSON.stringify({ model: config.chat.model, site: config.name, limits: config.chat.limits, data: chatData })));
+} else if (writesFunctions && fs.existsSync(fnFile)) {
   fs.rmSync(fnFile);
+}
+const evFile = path.join(root, 'functions/api/event.js');
+if (config.analytics.events && writesFunctions) {
+  const tpl = fs.readFileSync(path.join(root, 'src/functions/event.js'), 'utf8');
+  fs.mkdirSync(path.dirname(evFile), { recursive: true });
+  fs.writeFileSync(evFile, tpl.replace('/*__EVENTS__*/null', JSON.stringify(Object.fromEntries(Object.keys(EVENTS).map((k) => [k, 1])))));
+} else if (writesFunctions && fs.existsSync(evFile)) {
+  fs.rmSync(evFile);
 }
 
 // 7. Launch checklist in the terminal.
 const todo = [];
 if (!config.contactEmail) todo.push('Add contactEmail in site.config.mjs (AdSense reviewers look for a working contact route).');
 else todo.push(`Make sure ${config.contactEmail} reaches you (Cloudflare Email Routing, see README).`);
-if (!config.newsletter.action) todo.push('Optional: connect a newsletter provider (newsletter.action) to show the sign-up box.');
+if (config.newsletter.action && !/^https:\/\/buttondown\.com\/api\/emails\/embed-subscribe\/[\w-]+$/.test(config.newsletter.action)) console.warn(`Warning: newsletter.action doesn't look like a Buttondown form address (https://buttondown.com/api/emails/embed-subscribe/USERNAME). See docs/newsletter-setup.md.`);
+if (!config.newsletter.action) todo.push('Optional: paste your Buttondown form address into newsletter.action to show the sign-up box (docs/newsletter-setup.md).');
 if (!config.adsense.client) todo.push('Add your AdSense publisher ID (adsense.client) once your account is approved.');
 if (Object.values(config.affiliates).some((a) => !/[?&](aid|a_aid|partner_id|affiliate|ref)=/i.test(a.url))) todo.push('Swap the affiliate URLs for your tracked partner links.');
 console.log(`Built ${urls.length + 1} pages into ${path.relative(root, out)}/${preview ? ' (preview)' : ''}`);

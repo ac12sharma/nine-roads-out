@@ -6,7 +6,7 @@ export const THEMES = [
   {
     key: 'coast', slug: 'coastal-drives-from-dublin', og: 'hook',
     nav: 'Coastal drives',
-    title: 'Coastal drives from Dublin: three day trips to the sea',
+    title: 'Coastal drives from Dublin: three trips to the sea',
     h1: 'Coastal day drives from Dublin',
     lede: 'Three of the nine drives end at the sea: a glacial fjord in Louth, a cliff coast in Waterford and a lighthouse headland in Wexford. Here is how they compare, and how to choose.',
     desc: 'The best coastal day drives from Dublin: Carlingford Lough, the Copper Coast and Hook Head, compared by drive time, with the routes and tips for each.',
@@ -28,7 +28,7 @@ export const THEMES = [
   {
     key: 'mountains', slug: 'mountain-drives-from-dublin', og: 'glendalough',
     nav: 'Mountain drives',
-    title: 'Mountain drives from Dublin: five scenic passes for a day trip',
+    title: 'Mountain drives from Dublin: five scenic passes',
     h1: 'Mountain day drives from Dublin',
     lede: 'Bog passes, a notch cut through rock by hand and a climb up hairpin bends. Five of the nine drives cross real mountain roads, from the Sally Gap, under an hour from the city, to the Vee in the Knockmealdowns.',
     desc: 'Five scenic mountain drives from Dublin for a day trip: the Sally Gap, the Windy Gap, Slieve Bloom, Mount Leinster and the Vee, with routes and safety tips.',
@@ -52,7 +52,7 @@ export const THEMES = [
   {
     key: 'heritage', slug: 'historic-day-trips-from-dublin', og: 'boyne',
     nav: 'Historic drives',
-    title: 'Historic day trips from Dublin by car: tombs, monasteries and castles',
+    title: 'Historic day trips from Dublin by car',
     h1: 'Historic day drives from Dublin',
     lede: 'Five thousand years of Irish history within a day’s drive of Dublin: passage tombs older than the pyramids, early Christian monasteries, the seat of the Kings of Munster and a lighthouse that has stood for about 800 years.',
     desc: 'Historic day trips from Dublin by car: Newgrange, Loughcrew, Glendalough, the Rock of Cashel and Hook Head, with booking tips and the free sites on each route.',
@@ -77,7 +77,7 @@ export const THEMES = [
   {
     key: 'short', slug: 'short-drives-from-dublin', og: 'loughcrew',
     nav: 'Short drives',
-    title: 'Short day drives from Dublin: four trips under 3½ hours at the wheel',
+    title: 'Short day drives from Dublin, under 3½ hours',
     h1: 'Short day drives from Dublin',
     lede: 'Not every day out needs six hours in the car. These four drives keep the total driving under three and a half hours, which leaves time for the stops even in midwinter, when there are fewer than eight hours of daylight.',
     desc: 'Four short day drives from Dublin with under 3½ hours of driving in total: Glendalough, the Boyne Valley, Loughcrew and Carlingford. Good for winter days and half days.',
@@ -102,12 +102,12 @@ export const THEMES = [
 /* No car? How each drive works without one.
    level: 'easy' (bus or tour works well), 'part' (you can reach part of it), 'car' (you need a car). */
 export const NOCAR = {
-  glendalough: { level: 'easy', text: 'St Kevin’s Bus runs from St Stephen’s Green North to Glendalough all year except Christmas Day. The morning bus and the late-afternoon return give you a few hours in the valley, enough to walk to the Upper Lake. You miss the Sally Gap and Lough Tay, which are the best of the drive.', links: [['St Kevin’s Bus timetable', 'https://www.glendaloughbus.com/timetable.aspx']] },
+  glendalough: { level: 'easy', text: 'St Kevin’s Bus runs from St Stephen’s Green North to Glendalough all year except Christmas Day. The late-morning bus out and the late-afternoon return give you a few hours in the valley, enough to walk to the Upper Lake. You miss the Sally Gap and Lough Tay, which are the best of the drive.', links: [['St Kevin’s Bus timetable', 'https://www.glendaloughbus.com/timetable.aspx']] },
   boyne: { level: 'easy', text: 'Guided day tours from Dublin are the simplest way, and many include the Newgrange visit. You can’t drive or walk to the tombs anyway: every visit starts at the Brú na Bóinne visitor centre with a shuttle bus across the river. By public transport, the nearest bus station is Drogheda. Check onward times in the TFI Journey Planner.', links: [['Brú na Bóinne tickets', 'https://heritageireland.ie/places-to-visit/bru-na-boinne-visitor-centre-newgrange-knowth-and-dowth/']] },
   cashel: { level: 'part', text: 'Day tours from Dublin often include the Rock of Cashel as one of several stops. Cashel has bus links, but services have changed in recent years, so check the TFI Journey Planner. The Vee needs a car.', links: [] },
-  cooley: { level: 'part', text: 'You can reach Carlingford town by bus: the 161 runs from Dundalk through Carlingford to Newry, and Dundalk has trains and buses from Dublin. The Windy Gap and the rest of the peninsula need a car.', links: [] },
-  copper: { level: 'part', text: 'Trains run from Dublin Heuston to Waterford, and the 360 and 360A buses go on to Tramore. The R675 coast road beyond Tramore needs a car.', links: [] },
-  loughcrew: { level: 'car', text: 'The cairns are on a hilltop down country roads with a car park for about ten cars. There is no practical bus, and tours from Dublin rarely come here.', links: [] },
+  cooley: { level: 'part', text: 'You can reach Carlingford town by bus: the 161 runs from Dundalk through Carlingford to Newry, and Dundalk has trains and buses from Dublin. The Windy Gap and the rest of the peninsula need a car.', links: [['Bus Éireann route 161', 'https://www.buseireann.ie/routes-and-timetables/161']] },
+  copper: { level: 'part', text: 'Trains run from Dublin Heuston to Waterford, and the 360 and 360A buses go on to Tramore. The R675 coast road beyond Tramore needs a car.', links: [['Irish Rail timetables by route', 'https://www.irishrail.ie/en-ie/train-timetables/timetables-by-route'], ['Waterford city bus routes (TFI)', 'https://www.transportforireland.ie/plan-a-journey/network-maps/waterford-city-bus-services/']] },
+  loughcrew: { level: 'car', text: 'The cairns are on a hilltop down a very narrow country road, about 3 km east of Oldcastle. There is no practical bus, so you need a car.', links: [['Loughcrew (Heritage Ireland)', 'https://heritageireland.ie/places-to-visit/loughcrew-megalithic-cemetery/']] },
   slievebloom: { level: 'car', text: 'The point of this drive is the two mountain roads, and no buses cross them. You need a car.', links: [] },
   leinster: { level: 'car', text: 'The Heritage Drive and the Nine Stones are only reachable by road, with no public transport. You need a car.', links: [] },
   hook: { level: 'car', text: 'Hook Head is at the end of a long peninsula with no practical public transport. You need a car.', links: [] },

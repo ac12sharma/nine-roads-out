@@ -1,0 +1,28 @@
+{
+  "ci": {
+    "collect": {
+      "startServerCommand": "node scripts/serve.mjs dist 4173",
+      "startServerReadyPattern": "Serving",
+      "url": [
+        "http://127.0.0.1:4173/",
+        "http://127.0.0.1:4173/glendalough/",
+        "http://127.0.0.1:4173/driving-guide/",
+        "http://127.0.0.1:4173/car-hire-dublin/",
+        "http://127.0.0.1:4173/day-trips-from-dublin-without-a-car/",
+        "http://127.0.0.1:4173/coastal-drives-from-dublin/"
+      ],
+      "numberOfRuns": 3,
+      "settings": { "chromeFlags": "--headless=new --no-sandbox" }
+    },
+    "assert": {
+      "assertions": {
+        "categories:performance": ["error", { "minScore": 0.9, "aggregationMethod": "median-run" }],
+        "categories:accessibility": ["error", { "minScore": 0.95, "aggregationMethod": "median-run" }],
+        "categories:best-practices": ["error", { "minScore": 0.95, "aggregationMethod": "median-run" }],
+        "categories:seo": ["error", { "minScore": 0.95, "aggregationMethod": "median-run" }],
+        "resource-summary:total:size": ["warn", { "maxNumericValue": 716800, "aggregationMethod": "median-run" }]
+      }
+    },
+    "upload": { "target": "filesystem", "outputDir": ".lighthouseci" }
+  }
+}

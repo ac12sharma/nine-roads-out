@@ -3,8 +3,11 @@ import { esc, fmtMins, mapsURL, fillQ, windWords, sunTimes, fmtClock } from './l
 import { FILTERS } from './content/trips.mjs';
 import { TYPES, mapsSearch } from './content/restaurants.mjs';
 import { THEMES, NOCAR } from './content/guides.mjs';
+import { TOTAL, levelFor, levelBands } from './shared/levels.mjs';
+import { FAQS } from './content/faqs.mjs';
+import { ARTICLES } from './content/articles.mjs';
 
-export function createRenderer({ config, trips, assets, preview, restaurants, irelandMap, photos = {} }) {
+export function createRenderer({ config, trips, assets, preview, restaurants, irelandMap, photos = {}, coords = {} }) {
   const adsOn = !!config.adsense.client && !preview;
   const year = new Date().getFullYear();
   const abs = (p) => config.siteUrl + p;
@@ -38,10 +41,10 @@ export function createRenderer({ config, trips, assets, preview, restaurants, ir
     const hidden = Object.entries(N.hidden || {}).map(([k, v]) => `<input type="hidden" name="${esc(k)}" value="${esc(v)}">`).join('');
     return `<section class="news news-${where}" aria-labelledby="news-${where}"><div class="news-in">
 <div class="news-copy"><h2 id="news-${where}">${esc(N.heading)}</h2><p>${esc(N.pitch)}</p></div>
-<div class="news-act"><form class="news-form" action="${esc(N.action || '#')}" method="post" target="_blank"${demo ? ' data-demo' : ''}>
+<div class="news-act"><form class="news-form" action="${esc(N.action || '#')}" method="post" data-where="${where}"${demo ? ' data-demo' : ''}>
 <label class="sr" for="news-email-${where}">Email address</label><input id="news-email-${where}" type="email" name="${esc(N.field || 'email')}" required placeholder="Your email address" autocomplete="email">${hidden}
 <button class="btn" type="submit">Sign me up</button></form>
-<p class="news-small">No spam, unsubscribe any time. See the <a href="${u('/privacy/')}">privacy policy</a>.</p></div>
+<p class="news-small">You’ll get an email asking you to confirm. No spam, unsubscribe any time. See the <a href="${u('/privacy/')}">privacy policy</a>.</p></div>
 </div></section>`;
   }
 
@@ -67,7 +70,7 @@ export function createRenderer({ config, trips, assets, preview, restaurants, ir
 <nav aria-label="Plan your trip"><h2>Plan your trip</h2><ul>${THEMES.map((th) => `<li><a href="${u('/' + th.slug + '/')}">${esc(th.nav)}</a></li>`).join('')}<li><a href="${u('/car-hire-dublin/')}">Hiring a car in Dublin</a></li><li><a href="${u('/day-trips-from-dublin-without-a-car/')}">No car? Tours and buses</a></li><li><a href="${u('/driving-guide/')}">Driving guide</a></li></ul></nav>
 <nav aria-label="This site"><h2>This site</h2><ul><li><a href="${u('/how-much-of-ireland/')}">Your Ireland map</a></li><li><a href="${u('/about/')}">About</a></li><li><a href="${u('/advertise/')}">Advertise with us</a></li><li><a href="${u('/contact/')}">Contact</a></li><li><a href="${u('/privacy/')}">Privacy and cookies</a></li><li><a href="${u('/terms/')}">Terms of use</a></li>${adsOn ? '<li><button type="button" class="linkish" data-consent>Cookie settings</button></li>' : ''}</ul></nav>
 </div>
-<div class="wrap foot-base"><p>Some links on this site are affiliate links. If you book through them, we may earn a commission at no extra cost to you.${adsOn ? ' Ads are served by Google.' : ''} Drive times are approximate. Details were last checked in ${esc(config.checked)}, but opening times and access change, so check official sites before you go.</p>
+<div class="wrap foot-base"><p>Some links on this site are affiliate links. If you book through them, we may earn a commission at no extra cost to you.${adsOn ? ' Ads are served by Google.' : ''} Drive times are approximate. Each drive page shows when its details were last checked, but opening times and access change, so check official sites before you go.</p>
 <p>© ${year} ${esc(config.name)}. Illustrations drawn in code.</p></div></footer>`;
   }
 
@@ -94,9 +97,9 @@ export function createRenderer({ config, trips, assets, preview, restaurants, ir
 <link rel="icon" href="${u('/favicon.svg')}" type="image/svg+xml">
 <link rel="apple-touch-icon" href="${u('/apple-touch-icon.png')}">
 <link rel="manifest" href="${u('/site.webmanifest')}">
-<link rel="preload" href="${u('/fonts/archivo.woff2')}" as="font" type="font/woff2" crossorigin>
-<link rel="preload" href="${u('/fonts/newsreader.woff2')}" as="font" type="font/woff2" crossorigin>
 ${preload}
+<link rel="preload" href="${u('/fonts/archivo-v2.woff2')}" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="${u('/fonts/newsreader-v2.woff2')}" as="font" type="font/woff2" crossorigin>
 <link rel="stylesheet" href="${u(assets.css)}">
 ${adsHead}
 ${analytics}
@@ -111,7 +114,7 @@ ${footer(u)}
 <script src="${u(assets.app)}" defer></script>`;
     if (fragment) return head + '\n' + doc + '\n';
     return `<!doctype html>
-<html lang="en-IE">
+<html lang="en-IE"${config.analytics.events && !preview ? ' data-events="/api/event"' : ''}>
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
@@ -125,9 +128,13 @@ ${doc}
   }
 
   /* ---------- shared pieces ---------- */
+  // Scene card image with a 720px version for phones. `sizes` is the width the image is shown at.
+  const CARD_SIZES = { card: '(max-width: 640px) calc(100vw - 32px), (max-width: 1000px) 46vw, 360px', hub: '(max-width: 900px) 46vw, 280px', wide: '(max-width: 640px) calc(100vw - 32px), 420px' };
+  const cardImg = (id, u, sizes, eager = false) => `<img src="${u('/images/scenes/' + id + '-card.webp')}" srcset="${u('/images/scenes/' + id + '-card-sm.webp')} 720w, ${u('/images/scenes/' + id + '-card.webp')} 960w" sizes="${CARD_SIZES[sizes]}" width="960" height="640" alt="" loading="${eager ? 'eager' : 'lazy'}" decoding="async">`;
+
   function card(t, u, eager = false) {
     return `<li class="card" data-id="${t.id}"><a class="card-a" href="${u(tripPath(t))}">
-<span class="card-img"><img src="${u('/images/scenes/' + t.id + '-card.webp')}" width="960" height="640" alt="" loading="${eager ? 'eager' : 'lazy'}" decoding="async"></span>
+<span class="card-img">${cardImg(t.id, u, 'card', eager)}</span>
 <span class="card-ga" lang="ga">${esc(t.ga)}</span>
 <span class="card-en">${esc(t.en)}</span>
 <span class="card-meta"><span class="card-time">${fmtMins(t.mins)}</span><span class="card-dir" title="Heading from Dublin">${t.wind}</span><span class="card-wheel">about ${fmtMins(t.drive * 60)} at the wheel</span></span>
@@ -178,7 +185,7 @@ ${r.featured ? '<p class="eat-feat">Featured partner</p>' : ''}<div class="eat-t
 
   function daylightBlock() {
     const s = sunTimes(new Date());
-    const dh = (s.set - s.rise) / 36e5;
+    const dh = (s.set.getTime() - s.rise.getTime()) / 36e5;
     return `<div class="daylight" aria-live="polite">
 <p class="dl-label">Today in Dublin, <span id="dl-date">${new Date().toLocaleDateString('en-IE', { weekday: 'long', day: 'numeric', month: 'long', timeZone: 'Europe/Dublin' })}</span></p>
 <div class="dl-times"><div><span class="dl-t" id="dl-rise">${fmtClock(s.rise)}</span><span class="dl-k">Sunrise</span></div><span class="dl-arrow" aria-hidden="true">→</span><div><span class="dl-t" id="dl-set">${fmtClock(s.set)}</span><span class="dl-k">Sunset</span></div></div>
@@ -186,10 +193,29 @@ ${r.featured ? '<p class="eat-feat">Featured partner</p>' : ''}<div class="eat-t
 <p class="dl-advice" id="dl-advice">Allow about three hours for stops on top of the driving time.</p></div>`;
   }
 
+  /** "Photo: author, licence, via Wikimedia Commons", linked to the source page and the licence. */
+  function photoCredit(/** @type {{ credit?: string, licence?: string, licenceUrl?: string, source?: string }} */ p) {
+    if (!p.credit) return '';
+    const who = p.source ? `<a href="${esc(p.source)}" target="_blank" rel="noopener">${esc(p.credit)}</a>` : esc(p.credit);
+    if (!p.licence) return ` <span class="ph-credit">Photo: ${who}</span>`;
+    const lic = p.licenceUrl ? `<a href="${esc(p.licenceUrl)}" target="_blank" rel="noopener license">${esc(p.licence)}</a>` : esc(p.licence.toLowerCase());
+    const changed = /^CC BY/.test(p.licence) ? ', resized' : '';
+    return ` <span class="ph-credit">Photo: ${who}, ${lic}${changed}${/commons\.wikimedia\.org/.test(p.source || '') ? ', via Wikimedia Commons' : ''}</span>`;
+  }
+
+  /** The "Image credits" section on the About page: every photo not taken for the site, with its licence. */
+  function imageCredits(/** @type {(p: string) => string} */ u) {
+    const rows = trips.flatMap((t) => (photos[t.id] || []).filter((p) => p.licence).map((p) => `<li><a href="${u(tripPath(t))}">${esc(t.en)}</a>: ${esc(p.caption || p.alt)}.${photoCredit(p).replace(' <span class="ph-credit">', ' ').replace(/<\/span>$/, '')}</li>`));
+    if (!rows.length) return '';
+    return `<h2 id="image-credits">Image credits</h2><p>The photos on the drive pages are from Wikimedia Commons, used under their CC0, CC BY or public domain terms. Each is credited under the photo, and listed here.</p><ul class="credits">${rows.join('')}</ul>`;
+  }
+
   function photoGallery(t, u) {
     const list = photos[t.id] || [];
     if (!list.length) return '';
-    return `<section class="photos" aria-labelledby="ph-${t.id}"><h2 class="sec-h" id="ph-${t.id}">On the road</h2><div class="ph-grid">${list.map((p, k) => `<figure class="ph${k === 0 && list.length !== 2 ? ' ph-wide' : ''}"><img src="${u('/photos/' + p.file)}" width="${p.w}" height="${p.h}" alt="${esc(p.alt)}" loading="lazy" decoding="async">${p.caption || p.credit ? `<figcaption>${esc(p.caption || '')}${p.credit ? ` <span class="ph-credit">Photo: ${esc(p.credit)}</span>` : ''}</figcaption>` : ''}</figure>`).join('')}</div></section>`;
+    const wide = (/** @type {number} */ k) => k === 0 && list.length !== 2;
+    const img = (/** @type {any} */ p, /** @type {number} */ k) => `<img src="${u('/photos/' + p.file)}"${p.small ? ` srcset="${u('/photos/' + p.small)} 800w, ${u('/photos/' + p.file)} 1600w" sizes="${wide(k) || list.length === 1 ? '(max-width: 760px) 100vw, 760px' : '(max-width: 760px) 100vw, 380px'}"` : ''} width="${p.w}" height="${p.h}" alt="${esc(p.alt)}" loading="lazy" decoding="async">`;
+    return `<section class="photos" aria-labelledby="ph-${t.id}"><h2 class="sec-h" id="ph-${t.id}">Photos</h2><div class="ph-grid">${list.map((p, k) => `<figure class="ph${wide(k) ? ' ph-wide' : ''}">${img(p, k)}${p.caption || p.credit ? `<figcaption>${esc(p.caption || '')}${photoCredit(p)}</figcaption>` : ''}</figure>`).join('')}</div></section>`;
   }
 
   /* ---------- home ---------- */
@@ -215,12 +241,12 @@ ${r.featured ? '<p class="eat-feat">Featured partner</p>' : ''}<div class="eat-t
 <div class="sec-head"><h2>The nine drives</h2><p class="sub">Sorted by drive time from Dublin city centre. Every one loops back to the city in a day.</p>
 <div class="filters" id="filters" role="group" aria-label="Filter by scenery">${FILTERS.map(([k, l]) => `<button type="button" class="chip" data-f="${k}" aria-pressed="${k === 'all'}">${l} <span class="n">${counts[k]}</span></button>`).join('')}</div>
 <p class="filter-note" id="filter-note" aria-live="polite"></p></div>
-<ul class="cards" id="cards">${trips.map((t, i) => card(t, u, i < 3)).join('')}</ul>
+<ul class="cards" id="cards">${trips.map((t) => card(t, u)).join('')}</ul>
 </section>
 
 <section class="wrap hubs" aria-labelledby="hubs-h">
 <div class="sec-head"><h2 id="hubs-h">Find your kind of drive</h2></div>
-<ul class="hub-list">${THEMES.map((th) => `<li><a class="hub" href="${u('/' + th.slug + '/')}"><span class="hub-img"><img src="${u('/images/scenes/' + th.og + '-card.webp')}" width="960" height="640" alt="" loading="lazy" decoding="async"></span><span class="hub-t"><span class="hub-n">${esc(th.nav)}</span><span class="hub-m">${trips.filter(th.pick).length} drives</span></span></a></li>`).join('')}</ul>
+<ul class="hub-list">${THEMES.map((th) => `<li><a class="hub" href="${u('/' + th.slug + '/')}"><span class="hub-img">${cardImg(th.og, u, 'hub')}</span><span class="hub-t"><span class="hub-n">${esc(th.nav)}</span><span class="hub-m">${trips.filter(th.pick).length} drives</span></span></a></li>`).join('')}</ul>
 <p class="hub-more">No car? <a href="${u('/day-trips-from-dublin-without-a-car/')}">Here’s which drives work by bus or tour</a>. Hiring one? <a href="${u('/car-hire-dublin/')}">Read this first</a>.</p>
 </section>
 
@@ -262,7 +288,7 @@ ${daylightBlock()}
       path: '/', depth: 0, onHome: true, fragment,
       title: preview ? config.name : `${config.name}: the most beautiful day drives from Dublin`,
       desc: 'Nine of the most beautiful day trips by car from Dublin city: Glendalough, Newgrange, Carlingford, the Copper Coast, Hook Head and more, with routes, road numbers and tips.',
-      preload: `<link rel="preload" as="image" href="${u('/images/scenes/hero-wide.webp')}" media="(min-width: 641px)"><link rel="preload" as="image" href="${u('/images/scenes/hero-tall.webp')}" media="(max-width: 640px)">`,
+      preload: `<link rel="preload" as="image" fetchpriority="high" href="${u('/images/scenes/hero-wide.webp')}" media="(min-width: 641px)"><link rel="preload" as="image" fetchpriority="high" href="${u('/images/scenes/hero-tall.webp')}" media="(max-width: 640px)">`,
       jsonld: [
         { '@context': 'https://schema.org', '@type': 'WebSite', name: config.name, url: abs('/'), inLanguage: 'en-IE' },
         { '@context': 'https://schema.org', '@type': 'ItemList', name: 'Day drives from Dublin', itemListElement: trips.map((t, i) => ({ '@type': 'ListItem', position: i + 1, url: abs(tripPath(t)), name: t.en })) },
@@ -278,7 +304,7 @@ ${daylightBlock()}
     const more = [1, 2, 3].map((k) => trips[(i + k) % trips.length]);
     const stops = t.stops.filter((s) => !s.home);
     const shareText = `${t.en}: a day drive from Dublin`;
-    const route = `<li class="stop start"><h3>Dublin city centre</h3></li>` + t.stops.map((s) => `<li class="leg" aria-label="Road: ${esc(s.road.replace(/~/g, ''))}">${roadChips(s.road)}</li><li class="stop${s.home ? ' home' : ''}"><h3>${esc(s.n)}</h3><p>${esc(s.t)}</p></li>`).join('');
+    const route = `<li class="stop start"><h3>Dublin city centre</h3></li>` + t.stops.map((s) => `<li class="leg"><span class="sr">Road: </span>${roadChips(s.road)}</li><li class="stop${s.home ? ' home' : ''}"><h3>${esc(s.n)}</h3><p>${esc(s.t)}</p></li>`).join('');
     const body = `
 <nav class="wrap crumbs" aria-label="Breadcrumb"><ol><li><a href="${u('/')}">Home</a></li><li><a href="${u('/#drives')}">Drives</a></li><li aria-current="page">${esc(t.en)}</li></ol></nav>
 <article class="trip">
@@ -298,21 +324,24 @@ ${daylightBlock()}
 <div><dt>Best time</dt><dd class="best">${esc(t.best)}</dd></div>
 </dl>
 <p class="lede">${esc(t.lede)}</p>
-<div class="share" data-url="${esc(abs(path))}" data-title="${esc(shareText)}"><button type="button" class="share-b" data-share="copy">Copy link</button><a class="share-b" href="https://wa.me/?text=${encodeURIComponent(shareText + ' ' + abs(path))}" target="_blank" rel="noopener">Send on WhatsApp</a><button type="button" class="share-b" data-share="native" hidden>Share</button><button type="button" class="share-b" data-print>Print route card</button><span class="share-msg" role="status"></span></div>
+<div class="share" data-url="${esc(abs(path))}" data-title="${esc(shareText)}"><button type="button" class="share-b" data-share="copy">Copy link</button><a class="share-b" href="https://wa.me/?text=${encodeURIComponent(shareText + ' ' + abs(path))}" target="_blank" rel="noopener">Send on WhatsApp</a><button type="button" class="share-b" data-share="native" hidden>Share</button><button type="button" class="share-b" data-print data-track="print_route" data-track-l="${t.id}">Print route card</button><span class="share-msg" role="status"></span></div>
 <div class="done"><button type="button" class="done-b" data-done="${t.id}" data-counties="${esc(t.counties.join('|'))}" aria-pressed="false"><span class="done-box" aria-hidden="true"></span><span class="done-t">I've done this drive</span></button><p class="done-msg" data-done-msg aria-live="polite">Tick it off to add ${t.counties.length} counties to <a href="${u('/how-much-of-ireland/')}">your Ireland map</a>.</p></div>
 ${adSlot('inArticle')}
 <h2 class="sec-h">The route</h2>
 <ol class="route">${route}</ol>
 ${photoGallery(t, u)}
-<aside class="know"><h2 class="know-tag">Know before you go</h2><ul>${t.know.map((k) => `<li>${esc(k)}</li>`).join('')}</ul><p class="official">${t.links.map((l) => `<a href="${esc(l[1])}" target="_blank" rel="noopener">${esc(l[0])}</a>`).join('')}</p></aside>
+<aside class="know" aria-labelledby="know-${t.id}"><h2 class="know-tag" id="know-${t.id}">Know before you go</h2><ul>${t.know.map((k) => `<li>${esc(k)}</li>`).join('')}</ul><p class="official">${t.links.map((l) => `<a href="${esc(l[1])}" target="_blank" rel="noopener">${esc(l[0])}</a>`).join('')}</p><p class="checked">Checked against these official pages on <time datetime="${t.checked}">${longDate(t.checked)}</time>. Opening times and rules change, so check before you go.</p></aside>
 ${eatSection(t)}
+${faqSection(t.id)}
 <p class="th-links"><span>More like this:</span>${themeLinks(t, u)}</p>
+${relatedLine([...ARTICLES.filter((ar) => ar.related.includes(path)).map((ar) => `/${ar.slug}/`), '/best-time-of-year-for-each-drive/'].filter((p, i, l) => l.indexOf(p) === i), u, 'Guides')}
 ${newsletter('trip', u)}
 <p class="print-only print-foot">${esc(abs(path).replace(/^https?:\/\//, ''))}. Drive times are approximate. Check opening times and road conditions before you set off.</p>
 </div>
 <aside class="trip-side" aria-label="Plan this drive"><div class="side-in">
-<a class="btn btn-block" href="${esc(mapsURL(t))}" target="_blank" rel="noopener">Open the route in Google Maps</a>
+<a class="btn btn-block" href="${esc(mapsURL(t))}" target="_blank" rel="noopener" data-track="maps_open" data-track-l="${t.id}">Open the route in Google Maps</a>
 <p class="maps-note">Directions from Dublin through the main stops.</p>
+${gpxLink(t, u)}
 ${planBox(t, u)}
 ${adSlot('sidebar', 'ad-side')}
 </div></aside>
@@ -327,9 +356,9 @@ ${adSlot('footer', 'wrap')}
 <section class="wrap more"><h2>More drives from Dublin</h2><ul class="cards cards-3">${more.map((m) => card(m, u)).join('')}</ul></section>`;
     return layout({
       path, depth: 1, ogType: 'article', ogImage: `/og/${t.id}.jpg`, tripId: t.id,
-      title: `${t.en} day trip from Dublin: ${t.via.replace(/^And /, 'and ')} | ${config.name}`,
+      title: `${t.en} day trip from Dublin | ${config.name}`,
       desc: t.desc,
-      preload: `<link rel="preload" as="image" href="${u('/images/scenes/' + t.id + '-plate.webp')}" media="(min-width: 641px)"><link rel="preload" as="image" href="${u('/images/scenes/' + t.id + '-plate-sm.webp')}" media="(max-width: 640px)">`,
+      preload: `<link rel="preload" as="image" fetchpriority="high" href="${u('/images/scenes/' + t.id + '-plate.webp')}" media="(min-width: 641px)"><link rel="preload" as="image" fetchpriority="high" href="${u('/images/scenes/' + t.id + '-plate-sm.webp')}" media="(max-width: 640px)">`,
       jsonld: [
         {
           '@context': 'https://schema.org', '@type': 'TouristTrip', name: `${t.en}: ${t.via}`, description: t.desc, url: abs(path), image: abs(`/og/${t.id}.jpg`),
@@ -337,17 +366,45 @@ ${adSlot('footer', 'wrap')}
           itinerary: { '@type': 'ItemList', numberOfItems: stops.length, itemListElement: stops.map((s, k) => ({ '@type': 'ListItem', position: k + 1, item: { '@type': 'TouristAttraction', name: s.n, description: s.t } })) },
         },
         { '@context': 'https://schema.org', '@type': 'BreadcrumbList', itemListElement: [{ '@type': 'ListItem', position: 1, name: 'Home', item: abs('/') }, { '@type': 'ListItem', position: 2, name: t.en, item: abs(path) }] },
+        ...faqJsonld(t.id),
       ],
       body,
     });
   }
 
   /* ---------- prose pages ---------- */
-  function prosePage({ path, title, h1, lede, desc, content, active = '', jsonld = [] }) {
+  const longDate = (/** @type {string} */ iso) => new Date(iso + 'T12:00:00Z').toLocaleDateString('en-IE', { day: 'numeric', month: 'long', year: 'numeric', timeZone: 'UTC' });
+  const plain = (/** @type {string} */ html) => html.replace(/<[^>]+>/g, '').replace(/&amp;/g, '&').replace(/&#39;/g, "'").replace(/&quot;/g, '"');
+
+  /** Visible questions and answers, each linking to the official page it comes from. */
+  function faqSection(/** @type {string} */ key, heading = 'Questions people ask') {
+    const list = FAQS[key];
+    if (!list) return '';
+    return `<section class="faq" aria-labelledby="faq-${key}"><h2 id="faq-${key}">${esc(heading)}</h2>${list.map((f) => `<h3>${esc(f.q)}</h3><p>${f.a} <a class="faq-src" href="${esc(f.source)}" target="_blank" rel="noopener">Source</a></p>`).join('')}</section>`;
+  }
+  /** The same questions as FAQPage structured data. */
+  function faqJsonld(/** @type {string} */ key) {
+    const list = FAQS[key];
+    if (!list) return [];
+    return [{ '@context': 'https://schema.org', '@type': 'FAQPage', mainEntity: list.map((f) => ({ '@type': 'Question', name: f.q, acceptedAnswer: { '@type': 'Answer', text: plain(f.a) } })) }];
+  }
+  /** "Sources" list at the bottom of a guide: [label, url] pairs, all read on `checked`. */
+  function sourcesList(/** @type {[string, string][]} */ list, /** @type {string} */ checked) {
+    return `<h2 id="sources">Sources</h2><p class="src-note">Official pages this guide is based on, read on ${longDate(checked)}. Timetables, prices and rules change, so check them before you travel.</p><ul class="sources">${list.map(([label, url]) => `<li><a href="${esc(url)}" target="_blank" rel="noopener">${esc(label)}</a></li>`).join('')}</ul>`;
+  }
+
+  /** Download link for the drive's GPX file, saying how many stops it holds. */
+  function gpxLink(/** @type {{ id: string, slug: string, stops: { home?: boolean }[] }} */ t, /** @type {(p: string) => string} */ u) {
+    const list = coords[t.id] || [], ok = list.filter((/** @type {{ lat?: number }} */ c) => c.lat != null).length;
+    if (!ok) return '';
+    return `<p class="gpx"><a href="${u('/gpx/' + t.slug + '.gpx')}" download data-track="gpx_download" data-track-l="${t.id}">Download the stops as GPX</a><span>${ok} of ${list.length} stops, for a sat-nav or mapping app.${ok < list.length ? ' Stops without a verified position are left out.' : ''}</span></p>`;
+  }
+
+  function prosePage({ path, title, h1, lede, desc, content, active = '', jsonld = [], ogImage = '/og/home.jpg', ogType = 'website', related = [] }) {
     const u = urlFor(1);
     const body = `<nav class="wrap crumbs" aria-label="Breadcrumb"><ol><li><a href="${u('/')}">Home</a></li><li aria-current="page">${esc(h1)}</li></ol></nav>
-<article class="wrap prose-page"><header class="prose-head"><h1>${esc(h1)}</h1>${lede ? `<p class="lede">${lede}</p>` : ''}</header><div class="prose">${content(u)}</div></article>`;
-    return layout({ path, depth: 1, title: `${title} | ${config.name}`, desc, body, active, jsonld });
+<article class="wrap prose-page"><header class="prose-head"><h1>${esc(h1)}</h1>${lede ? `<p class="lede">${lede}</p>` : ''}</header><div class="prose">${content(u)}${relatedLine(related, u)}</div></article>`;
+    return layout({ path, depth: 1, title: `${title} | ${config.name}`, desc, body, active, jsonld, ogImage, ogType });
   }
 
   function guide() {
@@ -355,15 +412,15 @@ ${adSlot('footer', 'wrap')}
     const rows = Array.from({ length: 12 }, (_, m) => {
       const d = new Date(Date.UTC(y, m, 15, 12));
       const s = sunTimes(d);
-      return `<tr><th scope="row">${d.toLocaleDateString('en-IE', { month: 'long', timeZone: 'UTC' })}</th><td>${fmtClock(s.rise)}</td><td>${fmtClock(s.set)}</td><td>${fmtMins((s.set - s.rise) / 6e4)}</td></tr>`;
+      return `<tr><th scope="row">${d.toLocaleDateString('en-IE', { month: 'long', timeZone: 'UTC' })}</th><td>${fmtClock(s.rise)}</td><td>${fmtClock(s.set)}</td><td>${fmtMins((s.set.getTime() - s.rise.getTime()) / 6e4)}</td></tr>`;
     }).join('');
     return prosePage({
-      path: '/driving-guide/', active: 'guide',
-      title: 'Driving from Dublin: tolls, speed limits, road signs and daylight',
+      path: '/driving-guide/', active: 'guide', related: ['/best-time-of-year-for-each-drive/', '/car-hire-dublin/', '/day-trips-from-dublin-without-a-car/'],
+      title: 'Driving from Dublin: tolls, speed limits and signs',
       h1: 'Driving from Dublin: the day-trip guide',
       lede: 'What makes a day drive from Dublin go smoothly: tolls, speed limits, how to read Irish road signs, narrow roads, weather and how much daylight you will get.',
       desc: 'A practical guide to day drives from Dublin: the M50 toll, Irish speed limits, how to read road signs, narrow country roads, weather and daylight by month.',
-      jsonld: [{ '@context': 'https://schema.org', '@type': 'Article', headline: 'Driving from Dublin: the day-trip guide', author: { '@type': 'Person', name: config.owner.name }, publisher: { '@type': 'Organization', name: config.name }, inLanguage: 'en-IE', url: abs('/driving-guide/') }],
+      jsonld: [{ '@context': 'https://schema.org', '@type': 'Article', headline: 'Driving from Dublin: the day-trip guide', author: { '@type': 'Person', name: config.owner.name }, publisher: { '@type': 'Organization', name: config.name }, inLanguage: 'en-IE', url: abs('/driving-guide/'), image: abs('/og/home.jpg') }],
       content: (u) => `
 <h2 id="tolls">Tolls</h2>
 <p>The M50 ring road around Dublin has a barrier-free toll between junctions 6 and 7. There is no booth: cameras read your number plate and you pay online at <a href="https://www.eflow.ie/" target="_blank" rel="noopener">eflow.ie</a> by 8pm the next day. If you are driving a hire car, ask at the desk how the company handles it.</p>
@@ -421,27 +478,28 @@ ${adSlot('guide')}
 
   function about() {
     return prosePage({
-      path: '/about/', active: 'about', title: 'About', h1: 'About Nine Roads Out',
+      path: '/about/', active: 'about', related: ['/driving-guide/', '/how-much-of-ireland/', '/contact/', '/advertise/'], title: 'About', h1: 'About Nine Roads Out',
       lede: `Nine Roads Out is an independent guide to the most beautiful day drives from Dublin city, made in ${esc(config.owner.city)} by ${esc(config.owner.name)}.`,
       desc: 'Who makes Nine Roads Out, how the drives are chosen and checked, and how the site is funded.',
       content: (u) => `
 <h2>How the drives are chosen</h2>
 <p>Each drive fits comfortably into a day from Dublin city centre, loops back rather than retracing its steps where it can, and has at least one stop worth the journey on its own. Between them they cover the bog passes of Wicklow, the passage tombs of the Boyne, the fjord at Carlingford, the Midland mountains and the coasts of Waterford and Wexford.</p>
 <h2>How the details are checked</h2>
-<p>Opening arrangements, closures, booking rules and parking are checked against official sources such as Heritage Ireland, the National Parks and Wildlife Service, Coillte and local tourism offices. Each drive page links to the sources that matter for it. Details were last checked in ${esc(config.checked)}.</p>
+<p>Opening arrangements, closures, booking rules and parking are checked against official sources such as Heritage Ireland, the National Parks and Wildlife Service, Coillte and local tourism offices. Each drive page links to the sources that matter for it and shows the date they were last checked, and the guides list their sources at the bottom.</p>
 <p>Things change. If you spot something out of date, please <a href="${u('/contact/')}">get in touch</a> and it will be fixed.</p>
 <h2>How the site is funded</h2>
-<p>The site is free to use. It is paid for by advertising, by affiliate links to car hire, places to stay and tours, and by featured listings. If you book through an affiliate link, the site may earn a commission at no extra cost to you.</p>
+<p>The site is free to use. It is paid for by ${adsOn ? 'advertising, by ' : ''}affiliate links to car hire, places to stay and tours, and by featured listings.${adsOn ? '' : ' It does not show ads at the moment.'} If you book through an affiliate link, the site may earn a commission at no extra cost to you.</p>
 <p>Featured listings are paid placements for businesses on the routes, and they are always labelled. Nobody can pay to have a drive included, to change what we say about a place, or to remove an independent listing. <a href="${u('/advertise/')}">How advertising works</a>.</p>
 <h2>The pictures</h2>
-<p>The scenes are illustrations drawn in code, in the spirit of the old Irish railway and tourism posters. Each one shows the drive's signature view, from the round tower at Glendalough to the lighthouse at Hook Head.</p>`,
+<p>The scenes are illustrations drawn in code, in the spirit of the old Irish railway and tourism posters. Each one shows the drive's signature view, from the round tower at Glendalough to the lighthouse at Hook Head.</p>
+${imageCredits(u)}`,
     });
   }
 
   function contact() {
     const e = config.contactEmail;
     return prosePage({
-      path: '/contact/', title: 'Contact', h1: 'Contact',
+      path: '/contact/', related: ['/about/', '/advertise/', '/privacy/'], title: 'Contact', h1: 'Contact',
       lede: 'Corrections, suggestions and partnership enquiries are all welcome.',
       desc: 'How to contact Nine Roads Out with corrections, suggestions or partnership enquiries.',
       content: () => (e
@@ -456,33 +514,40 @@ ${adSlot('guide')}
   function privacy() {
     const e = config.contactEmail;
     const contactLine = (u) => (e ? `by email at <a href="mailto:${esc(e)}">${esc(e)}</a>` : `through the <a href="${u('/contact/')}">contact page</a>`);
+    // Every statement below follows site.config.mjs, so the policy describes what the built site really does.
+    const newsOn = !!(config.newsletter && config.newsletter.action);
+    const cfToken = !!config.analytics.cloudflareToken;
+    const cfOn = cfToken || !!config.analytics.cloudflareDashboard;
+    const eventsOn = !!config.analytics.events;
+    const thirdParty = [adsOn && "Google's ad script", cfOn && "Cloudflare's analytics script"].filter(Boolean);
     return prosePage({
-      path: '/privacy/', title: 'Privacy and cookies', h1: 'Privacy and cookies',
-      lede: `This policy explains what information this site collects, why, and the choices you have. Last updated ${esc(config.checked)}.`,
+      path: '/privacy/', related: ['/terms/', '/contact/', '/about/'], title: 'Privacy and cookies', h1: 'Privacy and cookies',
+      lede: `This policy explains what information this site collects, why, and the choices you have. Last updated ${esc(config.policiesUpdated)}.`,
       desc: 'How Nine Roads Out handles personal data, advertising cookies and affiliate links, and your rights under GDPR.',
       content: (u) => `
 <h2>Who is responsible</h2>
 <p>${esc(config.name)} is run by ${esc(config.owner.name)} in ${esc(config.owner.city)}, Ireland, who is the data controller for this site. You can get in touch ${contactLine(u)}.</p>
 <h2>What we collect</h2>
-<p>${config.newsletter && config.newsletter.action ? 'You do not need an account to use this site, and we only ask for your email address if you choose to sign up for the newsletter.' : 'You do not need an account to use this site and we do not ask for your name or email address.'} The fonts, images and scripts that make up the site are served from our own host, so loading a page does not send your details to font or script services.</p>
+<p>${config.newsletter && config.newsletter.action ? 'You do not need an account to use this site, and we only ask for your email address if you choose to sign up for the newsletter.' : 'You do not need an account to use this site and we do not ask for your name or email address.'} ${thirdParty.length ? `The fonts and images that make up the site are served from our own host. The exceptions are ${thirdParty.join(' and ')}, described below.` : 'The fonts, images and scripts that make up the site are served from our own host, so loading a page does not send your details to font or script services.'} This site does not set any cookies of its own.</p>
 <ul>
-<li><strong>Server logs.</strong> Our hosting provider records technical information such as IP address, browser type and the page requested, to keep the site secure and working. These logs are kept for a short period and are not used to identify you.</li>
-<li><strong>Analytics.</strong> We may use Cloudflare Web Analytics to count visits. It does not use cookies and does not track you across other sites.</li>
+<li><strong>Hosting.</strong> Like any website, the site is delivered by a hosting provider, which has to process technical information such as your IP address and browser type to send you the pages and protect the site from abuse. We don't keep logs of visits ourselves.</li>
+${cfOn ? `<li><strong>Visit counts.</strong> We use Cloudflare Web Analytics to count visits to each page. Cloudflare says it does not use cookies or local storage, and does not fingerprint visitors by IP address or browser.</li>` : ''}${config.analytics.events ? `
+<li><strong>Clicks.</strong> When you click a booking link, open a route in Google Maps, download a route file, print a route card, share a page, tick off a drive or use the trip planner, your browser tells this site what kind of thing was clicked and on which page, for example "a car hire link on the Glendalough page". This goes to our own site, not to an analytics company. No cookie, identifier or IP address is stored with it, and nothing you type into the planner is sent. If your browser sends a Global Privacy Control or Do Not Track signal, nothing is sent at all. These records are kept for three months.</li>` : ''}
 <li><strong>Your Ireland map.</strong> If you tick off drives or counties, that list is saved in your browser's local storage on your device so it is there next time. It is never sent to us, and clearing your browser data removes it.</li>
 </ul>
 ${config.newsletter && config.newsletter.action ? `<h2>Newsletter</h2>
-<p>If you sign up for the newsletter, your email address is stored by our newsletter provider and used only to send you the newsletter. You can unsubscribe at any time with the link in every email, and your address is then removed from the list. We rely on your consent for this.</p>
+<p>If you sign up for the newsletter, your email address is stored by ${config.newsletter.provider ? 'our newsletter provider, ' + esc(config.newsletter.provider) + ',' : 'our newsletter provider'} and used only to send you the newsletter.${config.newsletter.provider === 'Buttondown' ? ' Buttondown processes it in the United States, under the European Commission’s Standard Contractual Clauses.' : ''} You will first get an email asking you to confirm, and you are only added once you do. You can unsubscribe at any time with the link in every email. To have your address deleted altogether, ${config.contactEmail ? `email <a href="mailto:${esc(config.contactEmail)}">${esc(config.contactEmail)}</a>` : 'contact us'}. We rely on your consent for this.</p>
 ` : ''}<h2>Trip planner</h2>
-<p>The trip planner answers questions about drives, places to eat and timing inside your browser, using the information on this site.${config.chat.ai ? ' Questions it cannot answer that way are sent to Anthropic, the company that provides the AI model behind it, to generate a reply. Please do not type personal details into it.' : ' What you type is not sent anywhere.'}</p>
+<p>The trip planner answers questions about drives, places to eat and timing inside your browser, using the information on this site.${config.chat.ai ? ' Questions it cannot answer that way are sent, with the last few messages of the conversation, to Anthropic, the company that provides the AI model behind it, to generate a reply. Please do not type personal details into it. To stop the AI answers being overused, the site counts how many each visitor asks, using a scrambled code made from your IP address and the date rather than the address itself; the counts are deleted after two days.' : ' What you type is not sent anywhere.'}</p>
 <h2>Advertising</h2>
-<p>This site shows ads served by Google AdSense. If you are in the European Economic Area, the UK or Switzerland, you will be asked for your consent before any advertising cookies are set. With your consent, Google and its partners may use cookies to show ads based on your interests and to measure them. Without it, Google may still show limited, non-personalised ads.</p>
-<p>You can change your choice at any time with the Cookie settings link at the bottom of every page. Google explains how it uses information from sites like this one at <a href="https://policies.google.com/technologies/partner-sites" target="_blank" rel="noopener">policies.google.com</a>.</p>
-<h2>Affiliate links</h2>
-<p>Some links to car hire, accommodation and tour companies are affiliate links. When you follow one, that company may set its own cookies so it can credit us if you book. Their privacy policies apply on their sites.</p>
+${adsOn ? `<p>This site shows ads served by Google AdSense. If you are in the European Economic Area, the UK or Switzerland, you will be asked for your consent before any advertising cookies are set. With your consent, Google and its partners may use cookies to show ads based on your interests and to measure them. Without it, Google may still show limited, non-personalised ads.</p>
+<p>You can change your choice at any time with the Cookie settings link at the bottom of every page. Google explains how it uses information from sites like this one at <a href="https://policies.google.com/technologies/partner-sites" target="_blank" rel="noopener">policies.google.com</a>.</p>` : `<p>This site does not show ads at the moment, and no advertising cookies are set. If that changes, this policy will be updated before any ads appear, and visitors in the European Economic Area, the UK and Switzerland will be asked for consent before advertising cookies are used.</p>`}
+<h2>Affiliate links and other sites</h2>
+<p>Some links to car hire, accommodation and tour companies are affiliate links, and featured listings for places to eat are paid placements. When you follow an affiliate link, that company may set its own cookies so it can credit us if you book. Links to Google Maps, WhatsApp and other sites take you to those services, and their own privacy policies apply there.</p>
 <h2>Legal basis</h2>
-<p>We rely on your consent for advertising cookies, and on our legitimate interest in running a secure, working website for server logs and cookieless analytics.</p>
+<p>${[adsOn && 'advertising cookies', newsOn && 'the newsletter'].filter(Boolean).length ? `We rely on your consent for ${[adsOn && 'advertising cookies', newsOn && 'the newsletter'].filter(Boolean).join(' and ')}, and on` : 'We rely on'} our legitimate interest in running a secure, working website${cfOn || eventsOn ? ' and understanding how it is used, without cookies,' : ''}${config.chat.ai ? ' and in preventing abuse of the trip planner' : ''}.</p>
 <h2>Your rights</h2>
-<p>Under the GDPR you can ask to access, correct or delete personal data we hold about you, object to how it is used, or withdraw consent. To do so, contact us as above. You also have the right to complain to the Data Protection Commission in Ireland at <a href="https://www.dataprotection.ie/" target="_blank" rel="noopener">dataprotection.ie</a>.</p>
+<p>Under the GDPR you can ask to access, correct or delete personal data we hold about you, object to how it is used, or withdraw consent. To do so, contact us as above. You also have the right to complain to the Data Protection Commission in Ireland at <a href="https://www.dataprotection.ie/en" target="_blank" rel="noopener">dataprotection.ie</a>.</p>
 <h2>Changes</h2>
 <p>If this policy changes, the new version will be posted here with a new date.</p>`,
     });
@@ -490,20 +555,21 @@ ${config.newsletter && config.newsletter.action ? `<h2>Newsletter</h2>
 
   function terms() {
     return prosePage({
-      path: '/terms/', title: 'Terms of use', h1: 'Terms of use',
-      lede: `By using ${esc(config.name)} you agree to these terms. Last updated ${esc(config.checked)}.`,
+      path: '/terms/', related: ['/privacy/', '/contact/', '/about/'], title: 'Terms of use', h1: 'Terms of use',
+      lede: `By using ${esc(config.name)} you agree to these terms. Last updated ${esc(config.policiesUpdated)}.`,
       desc: 'Terms of use for Nine Roads Out, including accuracy of information, safety, affiliate links and copyright.',
-      content: () => `
+      content: (u) => `
 <h2>Information only</h2>
 <p>The routes, drive times, opening arrangements and other details on this site are for general information. They are checked carefully, but conditions change. Always check official sources before you travel, especially for bookings, closures and weather.</p>
 <h2>Your safety</h2>
 <p>You are responsible for driving safely and legally. Follow road signs, speed limits and local rules, and do not use this site while driving. Some roads described here are narrow, steep or exposed. Decide for yourself whether a road is suitable for you, your vehicle and the conditions on the day.</p>
 <h2>Links to other sites</h2>
-<p>This site links to other websites, including official sources, maps and booking services. We are not responsible for their content or for any booking you make with them. Some links are affiliate links, which may earn us a commission at no extra cost to you.</p>
+<p>This site links to other websites, including official sources, maps and booking services. We are not responsible for their content or for any booking you make with them. Some links are affiliate links, which may earn us a commission at no extra cost to you, and featured listings are paid placements. Both are labelled where they appear.</p>
 <h2>Liability</h2>
 <p>To the extent the law allows, ${esc(config.name)} is not liable for any loss or damage arising from use of this site or reliance on its content. Nothing in these terms limits liability that cannot be limited under Irish law.</p>
 <h2>Copyright</h2>
 <p>The text and illustrations on this site belong to ${esc(config.owner.name)}. You are welcome to link to any page and share it. Please do not copy the content or illustrations for other websites without permission.</p>
+${trips.some((t) => (photos[t.id] || []).some((p) => p.licence)) ? `<p>Photos credited to other photographers belong to them and are used under the licence shown with each photo. They are listed under <a href="${u('/about/#image-credits')}">Image credits</a>.</p>\n` : ''}<p>The route files (GPX) contain positions from OpenStreetMap, © OpenStreetMap contributors, available under the <a href="https://opendatacommons.org/licenses/odbl/" target="_blank" rel="noopener">Open Database License</a>. The county map uses boundaries from Natural Earth, which are in the public domain.</p>
 <h2>Governing law</h2>
 <p>These terms are governed by the laws of Ireland.</p>`,
     });
@@ -512,24 +578,25 @@ ${config.newsletter && config.newsletter.action ? `<h2>Newsletter</h2>
   function ireland() {
     const u = urlFor(1), M = irelandMap, names = Object.keys(M.counties);
     const all = new Set(trips.flatMap((t) => t.counties));
-    const lvlFor = (n) => (n >= 18 ? 3 : n >= 9 ? 2 : n >= 1 ? 1 : 0);
-    const svg = `<svg class="ie-map" viewBox="0 0 ${M.w} ${M.h}" role="group" aria-label="Map of the 26 counties of the Republic of Ireland. Select a county to mark it as driven.">
+    const bands = levelBands();
+    const at = (/** @type {number} */ n) => (n / TOTAL * 100).toFixed(2) + '%';
+    const svg = `<svg class="ie-map" viewBox="0 0 ${M.w} ${M.h}" role="group" aria-label="Map of the 26 counties of the Republic of Ireland. Select a county to mark it as driven." aria-describedby="ie-keys">
 <path class="ie-ni" d="${M.ni}"/><text class="ie-ni-lab" x="300" y="92" text-anchor="middle">Northern Ireland</text>
-<g class="ie-counties">${names.map((c) => `<path class="ie-c" d="${M.counties[c]}" data-county="${esc(c)}" tabindex="0" role="checkbox" aria-checked="false" aria-label="${esc(c)}"><title>${esc(c)}</title></path>`).join('')}</g>
+<g class="ie-counties">${names.map((c) => `<path class="ie-c" d="${M.counties[c]}" data-county="${esc(c)}" tabindex="${c === 'Dublin' ? 0 : -1}" role="checkbox" aria-checked="false" aria-label="${esc(c)}"><title>${esc(c)}</title></path>`).join('')}</g>
 <circle class="ie-dub" cx="${M.dublin[0]}" cy="${M.dublin[1]}" r="3.5"/><text class="ie-dub-lab" x="${M.dublin[0] + 7}" y="${M.dublin[1] + 4}">Dublin</text>
 </svg>`;
     const body = `<nav class="wrap crumbs" aria-label="Breadcrumb"><ol><li><a href="${u('/')}">Home</a></li><li aria-current="page">Your Ireland</li></ol></nav>
 <section class="wrap ie">
 <header class="prose-head"><h1>How much of Ireland have you driven?</h1><p class="lede">Tick off the drives you've done and tap any other county you've driven in. You'll see how much of the Republic's 26 counties you've covered, and what level of traveller that makes you.</p></header>
 <div class="ie-grid">
-<figure class="ie-fig">${svg}<figcaption><span class="ie-key ie-key-d"></span>From drives you've ticked off <span class="ie-key ie-key-m"></span>Counties you've added. Tap a county to add or remove it. Boundaries from Natural Earth.</figcaption></figure>
+<figure class="ie-fig">${svg}<figcaption><span class="ie-key ie-key-d"></span>From drives you've ticked off <span class="ie-key ie-key-m"></span>Counties you've added. Tap a county to add or remove it. Boundaries from Natural Earth.<span class="sr" id="ie-keys"> On a keyboard, the map is one stop: use the arrow keys to move to the neighbouring county, and Space or Enter to select it.</span></figcaption></figure>
 <div class="ie-side">
 <div class="lvl-card" aria-live="polite">
 <div class="lvl-badge"><span class="lvl-plate" data-lvl-num>0</span><div><p class="lvl-k" data-lvl-k>Your level</p><p class="lvl-name" data-lvl-name>Not on the road yet</p></div></div>
 <p class="lvl-pct"><span data-lvl-pct>0</span>%<span class="lvl-of"> of Ireland's counties</span></p>
-<p class="lvl-count" data-lvl-count>0 of 26 counties driven</p>
-<div class="lvl-bar" aria-hidden="true"><i data-lvl-fill></i><span class="lvl-tick" style="left:34.62%"></span><span class="lvl-tick" style="left:69.23%"></span></div>
-<div class="lvl-scale" aria-hidden="true"><span>Level 1</span><span style="left:34.62%">Level 2</span><span style="left:69.23%">Level 3</span></div>
+<p class="lvl-count" data-lvl-count>0 of ${TOTAL} counties driven</p>
+<div class="lvl-bar" aria-hidden="true"><i data-lvl-fill></i>${bands.slice(1).map((b) => `<span class="lvl-tick" style="left:${at(b.from)}"></span>`).join('')}</div>
+<div class="lvl-scale" aria-hidden="true">${bands.map((b, i) => `<span${i ? ` style="left:${at(b.from)}"` : ''}>Level ${b.level.n}</span>`).join('')}</div>
 <p class="lvl-next" data-lvl-next>Tick off a drive or tap a county to start.</p>
 <div class="share lvl-share" data-url="${esc(abs('/how-much-of-ireland/'))}" data-title="How much of Ireland have you driven?"><button type="button" class="share-b" data-share="copy-level">Copy my result</button><a class="share-b" data-share-wa href="https://wa.me/?text=${encodeURIComponent('How much of Ireland have you driven? ' + abs('/how-much-of-ireland/'))}" target="_blank" rel="noopener">Send on WhatsApp</a><button type="button" class="share-b" data-share="native-level" hidden>Share</button><span class="share-msg" role="status"></span></div>
 </div>
@@ -541,18 +608,16 @@ ${config.newsletter && config.newsletter.action ? `<h2>Newsletter</h2>
 <ul class="ie-chips">${names.map((c) => `<li><button type="button" class="chip ie-chip" data-county-chip="${esc(c)}" aria-pressed="false">${esc(c)}</button></li>`).join('')}</ul></section>
 <section class="ie-how prose" aria-labelledby="ie-how-h"><h2 id="ie-how-h">How the levels work</h2>
 <table class="t"><thead><tr><th scope="col">Level</th><th scope="col">Counties driven</th><th scope="col">Share of Ireland</th></tr></thead><tbody>
-<tr><th scope="row">Level 1, day-tripper</th><td>1 to 8</td><td>4% to 31%</td></tr>
-<tr><th scope="row">Level 2, road-tripper</th><td>9 to 17</td><td>35% to 65%</td></tr>
-<tr><th scope="row">Level 3, grand tourer</th><td>18 to 26</td><td>69% to 100%</td></tr>
+${bands.map((b) => `<tr><th scope="row">Level ${b.level.n}, ${b.level.name.toLowerCase()}</th><td>${b.from} to ${b.to}</td><td>${b.pctFrom}% to ${b.pctTo}%</td></tr>`).join('\n')}
 </tbody></table>
-<p>The share is of the 26 counties in the Republic. A county counts once you've driven on its roads, including on the way to somewhere else. All nine drives on this site together take in ${all.size} counties, which makes you a Level ${lvlFor(all.size)} traveller. Level 3 means heading west as well.</p>
+<p>The share is of the 26 counties in the Republic. A county counts once you've driven on its roads, including on the way to somewhere else. All nine drives on this site together take in ${all.size} counties, which makes you a Level ${levelFor(all.size).n} traveller. Level 3 means heading west as well.</p>
 <p>Your list is saved only in this browser, on this device. Nothing is sent to us.</p>
 <p><button type="button" class="share-b" data-reset>Clear my map</button></p>
 </section>
 </section>`;
     return layout({
       path: '/how-much-of-ireland/', depth: 1, active: 'ireland', ogImage: '/og/ireland.jpg',
-      title: `How much of Ireland have you driven? Find your traveller level | ${config.name}`,
+      title: `How much of Ireland have you driven? | ${config.name}`,
       desc: "Tick off the counties you've driven in and the drives you've done to see how much of Ireland you've covered by road, and whether you're a Level 1, 2 or 3 traveller.",
       body,
     });
@@ -571,7 +636,7 @@ ${list.map((t) => `<tr><th scope="row"><a href="${u(tripPath(t))}">${esc(t.en)}<
 </tbody></table></div>
 ${th.daylight ? `<div class="th-daylight">${daylightBlock()}</div>` : ''}
 <ol class="th-list">${list.map((t) => `<li class="th-item">
-<a class="th-img" href="${u(tripPath(t))}" tabindex="-1" aria-hidden="true"><img src="${u('/images/scenes/' + t.id + '-card.webp')}" width="960" height="640" alt="" loading="lazy" decoding="async"></a>
+<a class="th-img" href="${u(tripPath(t))}" tabindex="-1" aria-hidden="true">${cardImg(t.id, u, 'wide')}</a>
 <div class="th-body"><p class="th-ga" lang="ga">${esc(t.ga)}</p><h2><a href="${u(tripPath(t))}">${esc(t.en)}</a></h2>
 <p class="th-meta">${fmtMins(t.mins)} from Dublin · about ${fmtMins(t.drive * 60)} at the wheel · ${countyLabel(t.county)}</p>
 <p>${esc(th.angle[t.id] || t.lede)}</p>
@@ -580,7 +645,7 @@ ${th.daylight ? `<div class="th-daylight">${daylightBlock()}</div>` : ''}
 ${adSlot('guide')}
 <section class="th-tips"><h2 class="sec-h">Before you go</h2><ul class="tips">${th.tips.map(([h, p]) => `<li><h3>${esc(h)}</h3><p>${esc(p)}</p></li>`).join('')}</ul>
 <p class="more-link"><a href="${u('/driving-guide/')}">Read the full driving guide</a> for tolls, speed limits, road signs and daylight by month.</p></section>
-<nav class="th-more" aria-label="Other kinds of drive"><h2 class="sec-h">Other kinds of drive</h2><ul class="hub-list">${others.map((x) => `<li><a class="hub" href="${u('/' + x.slug + '/')}"><span class="hub-img"><img src="${u('/images/scenes/' + x.og + '-card.webp')}" width="960" height="640" alt="" loading="lazy" decoding="async"></span><span class="hub-t"><span class="hub-n">${esc(x.nav)}</span><span class="hub-m">${trips.filter(x.pick).length} drives</span></span></a></li>`).join('')}<li><a class="hub hub-plain" href="${u('/#drives')}"><span class="hub-t"><span class="hub-n">All nine drives</span><span class="hub-m">Sorted by drive time</span></span></a></li></ul></nav>
+<nav class="th-more" aria-label="Other kinds of drive"><h2 class="sec-h">Other kinds of drive</h2><ul class="hub-list">${others.map((x) => `<li><a class="hub" href="${u('/' + x.slug + '/')}"><span class="hub-img">${cardImg(x.og, u, 'hub')}</span><span class="hub-t"><span class="hub-n">${esc(x.nav)}</span><span class="hub-m">${trips.filter(x.pick).length} drives</span></span></a></li>`).join('')}<li><a class="hub hub-plain" href="${u('/#drives')}"><span class="hub-t"><span class="hub-n">All nine drives</span><span class="hub-m">Sorted by drive time</span></span></a></li></ul></nav>
 ${newsletter('theme', u)}
 </article>`;
     return layout({
@@ -600,45 +665,51 @@ ${newsletter('theme', u)}
     const short = trips.filter((t) => t.drive <= 3.25);
     return prosePage({
       path: '/car-hire-dublin/', active: 'hire',
-      title: 'Hiring a car in Dublin for a day trip: insurance, tolls and tips',
+      title: 'Hiring a car in Dublin: insurance, tolls and tips',
       h1: 'Hiring a car in Dublin for a day trip',
       lede: 'Most of the drives on this site need a car. Here is what to sort out before you book one in Dublin: the insurance excess, the M50 toll, manual or automatic, and what to check before you drive off.',
       desc: 'What to know before hiring a car in Dublin for a day trip: insurance and the excess, credit card cover, the M50 toll in a hire car, licences, Northern Ireland and fuel.',
-      jsonld: [{ '@context': 'https://schema.org', '@type': 'Article', headline: 'Hiring a car in Dublin for a day trip', author: { '@type': 'Person', name: config.owner.name }, publisher: { '@type': 'Organization', name: config.name }, inLanguage: 'en-IE', url: abs('/car-hire-dublin/') }],
+      jsonld: [...faqJsonld('car-hire'), { '@context': 'https://schema.org', '@type': 'Article', headline: 'Hiring a car in Dublin for a day trip', author: { '@type': 'Person', name: config.owner.name }, publisher: { '@type': 'Organization', name: config.name }, inLanguage: 'en-IE', url: abs('/car-hire-dublin/'), image: abs('/og/home.jpg') }],
       content: (u) => `
 ${cta('Compare prices from the big rental companies in one search.')}
 <h2 id="where">Airport or city?</h2>
 <p>Dublin Airport has the most rental desks, and it puts you straight onto the M1 and the M50, so you never have to drive through the city centre. A city pick-up can make sense if you are staying in town and only need the car for a day, but check the desk's opening hours, especially at weekends.</p>
 
 <h2 id="automatic">Manual or automatic</h2>
-<p>Most hire cars in Ireland are manual. Automatics cost more per day and sell out in summer, so if you need one, book it early. Everything is the mirror image of mainland Europe and North America: you drive on the left, and in a manual the gear stick is on your left.</p>
+<p>Many hire cars in Ireland are manual, and automatics are usually fewer, so if you need one, ask for it when you book. Everything is the mirror image of mainland Europe and North America: you drive on the left, and in a manual the gear stick is on your left.</p>
 
 <h2 id="insurance">Insurance and the excess</h2>
-<p>Hire prices in Ireland include third-party liability cover and collision damage cover, often called CDW. But the collision cover comes with an excess, the amount you pay if the car is damaged, and on a small car it often runs to €1,500 or more.</p>
+<p>Car rental companies only have to offer basic third-party insurance, which doesn't cover damage to the rental car itself. Most quotes add cover for the car, often called collision damage waiver or CDW, but it usually comes with a high excess: the amount you pay if the car is damaged. Check the excess figure in your quote before you book.</p>
 <ul>
-<li><strong>The hire company's excess cover.</strong> You pay a daily fee at the desk, often called super CDW or excess protection, to bring the excess down to little or nothing. It is the simplest option and the most expensive.</li>
-<li><strong>Standalone excess insurance.</strong> You buy a policy before you travel. If the car is damaged, you pay the hire company and claim the money back from your insurer.</li>
-<li><strong>What's often not covered.</strong> Tyres, glass, the underside of the car and putting in the wrong fuel are often excluded, even with extra cover. That matters on narrow country roads with stone walls, so read the small print.</li>
+<li><strong>The hire company's excess cover.</strong> You pay extra at the desk to bring the excess down. It is the simplest option.</li>
+<li><strong>Excess insurance from another insurer.</strong> You buy a policy before you travel, which may cost less. If the car is damaged, the hire company still takes the excess from your card and you claim it back from your insurer.</li>
+<li><strong>Read what's excluded.</strong> Whichever cover you choose, check what it leaves out before you sign. Country roads are narrow and often lined with stone walls.</li>
 </ul>
 
 <h2 id="credit-card">Paying, deposits and credit card cover</h2>
-<p>If you decline the hire company's excess cover, expect them to hold the full excess on your credit card until you return the car. Bring a credit card in the main driver's name, and ask before you book if you only have a debit card.</p>
-<p>Some credit cards include rental car cover, but many exclude Ireland, and most require you to decline the hire company's collision cover. Check your card's benefits guide, not its marketing page, and get confirmation from the card provider before you rely on it.</p>
+<p>You will usually need a credit card in the main driver's name for the security deposit, even if you booked with a debit card. If you decline the hire company's excess cover, ask how much they will hold on the card.</p>
+<p>Some credit cards include rental car cover. Check your card's terms to see whether it applies in Ireland and what it asks of you, and get confirmation from the card provider before you rely on it.</p>
 
 ${cta('Ready to compare prices?')}
 
 <h2 id="m50">The M50 toll in a hire car</h2>
-<p>The M50 ring road has a barrier-free toll between junctions 6 and 7. Cameras read the number plate, and the toll must be paid by 8pm the next day. Many of the big rental companies pay the toll for you and charge it back, sometimes with a fee, so ask at the desk who pays before you set off. If it is down to you, pay at <a href="https://www.eflow.ie/" target="_blank" rel="noopener">eflow.ie</a>. Unpaid tolls come back as penalties, usually with an admin charge from the hire company on top.</p>
-<p>The M1, M3, M7/M8 and a few other roads have toll plazas you pay as you drive through, by card or cash.</p>
+<p>The M50 ring road has a barrier-free toll between Junction 6 (Blanchardstown) and Junction 7 (Lucan). Cameras on the gantry read the number plate, and the toll must be paid by 8pm the next day. Many of the larger rental companies pay the toll themselves, so ask at the desk who pays before you set off. If it is down to you, pay at <a href="https://eflow.ie/" target="_blank" rel="noopener">eflow.ie</a> in time to avoid penalties, and check the rental terms for any charge the company adds.</p>
+<p>Every other toll road in Ireland, including the M1, M3, M4 and M7/M8, has a toll plaza with barriers. You pay as you pass, and the manual lanes take cash or card.</p>
 
 <h2 id="licence">Licence and age</h2>
-<p>Bring your full, physical driving licence: photos and photocopies are not accepted. EU and UK licences are fine, and so are licences from the US, Canada, Australia and New Zealand, without an International Driving Permit. Many companies want drivers to be 25 or over for their standard rates, charge a young-driver fee below that, and may add conditions for drivers over 70 or 75. Check the terms before you book.</p>
+<p>Bring your full driving licence; the desk will want to see the licence itself. Which licences you can drive on depends on where they were issued:</p>
+<ul>
+<li><strong>EU and EEA licences</strong> can be used while they are valid. <strong>UK licences</strong> are fine for visitors.</li>
+<li><strong>Licences from countries Ireland recognises for licence exchange</strong>, which include Australia, Canada and New Zealand, can be used for up to a year when visiting.</li>
+<li><strong>Licences from anywhere else, including the US</strong>: Citizens Information says you can drive for up to 12 months as a visitor if you also have an international driving permit from your country.</li>
+</ul>
+<p>Hire companies set their own rules on top: many want at least two years' experience with a full licence, and many have age limits or extra fees for younger and older drivers. Check the terms before you book.</p>
 
 <h2 id="northern-ireland">Driving into Northern Ireland</h2>
-<p>The border has no checks and on most roads you would not know you had crossed it. If you plan to drive into Northern Ireland, for example to the Mournes from Carlingford, tell the hire company when you pick up the car. Some charge a cross-border fee, and crossing without telling them can affect your cover. Speed limits in Northern Ireland are in miles per hour.</p>
+<p>There are no checks at the border, and on most roads you would not know you had crossed it. If you plan to drive into Northern Ireland, for example to the Mournes from Carlingford, tell the hire company when you book or pick up the car: some charge a cross-border fee, and their cover may depend on knowing. Speed limits in Northern Ireland are in miles per hour.</p>
 
 <h2 id="fuel">Fuel</h2>
-<p>Most hires are full to full: you collect the car with a full tank and return it full. Fill up near the return point and keep the receipt. Check whether the car takes petrol or diesel before you fill it, because putting in the wrong fuel is usually not covered by insurance.</p>
+<p>Check the fuel policy in the rental agreement. Many are full to full: you collect the car with a full tank and return it full, or pay the company to fill it. Fill up near the return point and keep the receipt. Check whether the car takes petrol or diesel before you fill it, and read whether the cover you chose includes putting in the wrong fuel.</p>
 
 <h2 id="checklist">Before you drive off</h2>
 <ul>
@@ -652,6 +723,13 @@ ${cta('Ready to compare prices?')}
 <h2 id="first-drive">Which drive first?</h2>
 <p>If you are new to driving on the left, start with something short: ${short.map((t) => `<a href="${u(tripPath(t))}">${esc(t.en)}</a>`).join(', ').replace(/, ([^,]*)$/, ' and $1')} all keep the total driving under three and a half hours. See <a href="${u('/short-drives-from-dublin/')}">short drives from Dublin</a>, and the <a href="${u('/driving-guide/')}">driving guide</a> for speed limits and road signs.</p>
 ${adSlot('guide')}
+${faqSection('car-hire')}
+${sourcesList([
+  ['Citizens Information: Foreign driving licences in Ireland', 'https://www.citizensinformation.ie/en/travel-and-recreation/motoring/driver-licensing/exchanging-foreign-driving-permit/'],
+  ['Competition and Consumer Protection Commission: Renting a car', 'https://www.ccpc.ie/consumer-advice/cars/renting-a-car'],
+  ['eFlow: About the M50 toll road', 'https://eflow.ie/how-it-works'],
+  ['Transport Infrastructure Ireland: Pay a toll', 'https://www.tii.ie/en/roads-tolling/tolling-information/pay-a-toll/'],
+], '2026-11-06')}
 ${cta('Compare car hire in Dublin')}
 <p class="small">No car and don't want one? <a href="${u('/day-trips-from-dublin-without-a-car/')}">Here's which drives work by bus or on a tour</a>.</p>`,
     });
@@ -674,15 +752,23 @@ ${cta('Compare car hire in Dublin')}
     };
     return prosePage({
       path: '/day-trips-from-dublin-without-a-car/', active: 'drives',
-      title: 'Day trips from Dublin without a car: tours, buses and which drives need wheels',
+      title: 'Day trips from Dublin without a car',
       h1: 'No car? Day trips from Dublin without driving',
       lede: 'Some of the nine drives work well by bus or on a guided tour. Others really need a car. Here is which is which, and the simplest way to do each one.',
       desc: 'Which day trips from Dublin work without a car: the bus to Glendalough, Newgrange tours, getting to Carlingford, Tramore and Cashel, and the drives that need a car.',
-      jsonld: [{ '@context': 'https://schema.org', '@type': 'Article', headline: 'Day trips from Dublin without a car', author: { '@type': 'Person', name: config.owner.name }, publisher: { '@type': 'Organization', name: config.name }, inLanguage: 'en-IE', url: abs('/day-trips-from-dublin-without-a-car/') }],
+      jsonld: [{ '@context': 'https://schema.org', '@type': 'Article', headline: 'Day trips from Dublin without a car', author: { '@type': 'Person', name: config.owner.name }, publisher: { '@type': 'Organization', name: config.name }, inLanguage: 'en-IE', url: abs('/day-trips-from-dublin-without-a-car/'), image: abs('/og/home.jpg') }],
       content: (u) => `
 <table class="t"><thead><tr><th scope="col">Drive</th><th scope="col">Without a car</th></tr></thead><tbody>${rows(u)}</tbody></table>
 <p>For buses and trains, the <a href="https://www.transportforireland.ie/" target="_blank" rel="noopener">TFI Journey Planner</a> has current times for every operator. Timetables change, so check it the day before.</p>
 ${groups.map(([k, h]) => `<h2 id="${k}">${h}</h2>${trips.filter((t) => NOCAR[t.id].level === k).map((t) => item(t, u)).join('')}`).join('\n')}
+${sourcesList([
+  ['St Kevin’s Bus: timetable', 'https://www.glendaloughbus.com/timetable.aspx'],
+  ['Heritage Ireland: Brú na Bóinne', 'https://heritageireland.ie/places-to-visit/bru-na-boinne-visitor-centre-newgrange-knowth-and-dowth/'],
+  ['Bus Éireann: route 161, Dundalk to Newry via Carlingford', 'https://www.buseireann.ie/routes-and-timetables/161'],
+  ['Irish Rail: timetables by route', 'https://www.irishrail.ie/en-ie/train-timetables/timetables-by-route'],
+  ['Transport for Ireland: Waterford city bus services', 'https://www.transportforireland.ie/plan-a-journey/network-maps/waterford-city-bus-services/'],
+  ['Heritage Ireland: Loughcrew', 'https://heritageireland.ie/places-to-visit/loughcrew-megalithic-cemetery/'],
+], '2026-11-07')}
 <div class="cta-box"><p class="cta-t">Hire a car for the day</p><p>A one-day hire opens up all nine drives. <a href="${u('/car-hire-dublin/')}">Read what to know first</a>, then compare prices.</p><a class="btn" href="${esc(A.carHire.url)}" target="_blank" rel="sponsored noopener">Compare car hire on ${esc(A.carHire.partner)}</a><p class="small">Affiliate links: if you book through them, we may earn a commission at no extra cost to you.</p></div>`,
     });
   }
@@ -691,7 +777,7 @@ ${groups.map(([k, h]) => `<h2 id="${k}">${h}</h2>${trips.filter((t) => NOCAR[t.i
   function advertise() {
     const e = config.contactEmail;
     return prosePage({
-      path: '/advertise/', title: 'Advertise with us', h1: 'Advertise with Nine Roads Out',
+      path: '/advertise/', related: ['/about/', '/contact/', '/coastal-drives-from-dublin/'], title: 'Advertise with us', h1: 'Advertise with Nine Roads Out',
       lede: `${esc(config.name)} is read by people planning a day out by car from Dublin, usually in the days before they go. If your business is on or near one of the nine routes, here is how to reach them.`,
       desc: 'Featured listings, newsletter sponsorship and sponsored guides for cafés, pubs, restaurants, places to stay and attractions on the day drives from Dublin.',
       content: (u) => `
@@ -720,5 +806,41 @@ ${e ? `<p>Email <a href="mailto:${esc(e)}?subject=Advertising">${esc(e)}</a> wit
     return layout({ path: '/404.html', depth: 0, title: `Page not found | ${config.name}`, desc: 'This page could not be found.', body });
   }
 
-  return { home, trip, guide, about, contact, privacy, terms, notFound, ireland, theme, carHire, noCar, advertise };
+  /** "Related:" line of links at the end of a page. */
+  function relatedLine(/** @type {string[]} */ paths, /** @type {(p: string) => string} */ u, label = 'Related') {
+    if (!paths.length) return '';
+    return `<p class="th-links"><span>${esc(label)}:</span>${paths.map((p) => `<a href="${u(p)}">${esc(pageLabel(p))}</a>`).join('')}</p>`;
+  }
+
+  /** A page's name for "Related" lists, from its path. */
+  function pageLabel(/** @type {string} */ p) {
+    const t = trips.find((x) => p === tripPath(x));
+    if (t) return `${t.en} drive`;
+    const th = THEMES.find((x) => p === `/${x.slug}/`);
+    if (th) return th.h1;
+    const ar = ARTICLES.find((x) => p === `/${x.slug}/`);
+    if (ar) return ar.h1;
+    /** @type {Record<string, string>} */
+    const fixed = { '/about/': 'About Nine Roads Out', '/contact/': 'Contact', '/privacy/': 'Privacy and cookies', '/terms/': 'Terms of use', '/advertise/': 'Advertise with us', '/driving-guide/': 'Driving guide: tolls, speed limits, signs and daylight', '/car-hire-dublin/': 'Hiring a car in Dublin', '/day-trips-from-dublin-without-a-car/': 'Day trips from Dublin without a car', '/how-much-of-ireland/': 'How much of Ireland have you driven?' };
+    if (fixed[p]) return fixed[p];
+    throw new Error(`No label for related page ${p}`);
+  }
+
+  /** One of the long-form guides in src/content/articles.mjs. */
+  function article(/** @type {import('./content/articles.mjs').Article} */ ar) {
+    const path = `/${ar.slug}/`;
+    return prosePage({
+      path, active: 'drives', title: ar.title, h1: ar.h1, lede: ar.lede, desc: ar.desc, ogImage: `/og/${ar.og}.jpg`, ogType: 'article',
+      jsonld: [
+        { '@context': 'https://schema.org', '@type': 'Article', headline: ar.h1, description: ar.desc, image: abs(`/og/${ar.og}.jpg`), dateModified: ar.checked, author: { '@type': 'Person', name: config.owner.name }, publisher: { '@type': 'Organization', name: config.name }, inLanguage: 'en-IE', url: abs(path) },
+        { '@context': 'https://schema.org', '@type': 'BreadcrumbList', itemListElement: [{ '@type': 'ListItem', position: 1, name: 'Home', item: abs('/') }, { '@type': 'ListItem', position: 2, name: ar.h1, item: abs(path) }] },
+      ],
+      content: (u) => `${ar.body({ u, fmtMins, fmtClock, sun: (d) => sunTimes(d), trips })}
+${adSlot('guide')}
+<h2 id="related">Related</h2><ul class="related">${ar.related.map((p) => `<li><a href="${u(p)}">${esc(pageLabel(p))}</a></li>`).join('')}</ul>
+${sourcesList(ar.sources, ar.checked)}`,
+    });
+  }
+
+  return { home, trip, guide, about, contact, privacy, terms, notFound, ireland, theme, carHire, noCar, advertise, article };
 }

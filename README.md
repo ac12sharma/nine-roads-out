@@ -1,10 +1,14 @@
 # Nine Roads Out
 
+<!-- CI badge: replace OWNER/REPO with the GitHub repository once it exists, then uncomment.
+[![CI](https://github.com/OWNER/REPO/actions/workflows/ci.yml/badge.svg)](https://github.com/OWNER/REPO/actions/workflows/ci.yml)
+-->
+
 The most beautiful day drives from Dublin, as a fast static website that is ready for ads and affiliate links.
 
 - 24 pages: home, nine drive pages, four theme pages (coastal, mountain, historic and short drives), a car hire guide, a no-car guide, Your Ireland, a driving guide, About, Advertise, Contact, Privacy and cookies, Terms, and a 404 page.
 - A trip planner chat on every page ("Where do you want to go?") that suggests drives by scenery, drive time or place, and finds places to eat by type and cuisine. It runs in the visitor's browser from the site's own data, so it costs nothing to run. You can optionally let it pass harder questions to Claude.
-- Places to eat on every drive (31 cafés, pubs, restaurants and fine dining rooms), with filters for type and cuisine.
+- Places to eat on every drive (30 cafés, pubs, restaurants and fine dining rooms), with filters for type and cuisine.
 - Traveller levels: visitors tick off drives and tap counties on a map of Ireland to see what percentage of the Republic's 26 counties they've driven, and whether they're a Level 1, 2 or 3 traveller. Progress is saved only in their own browser, and results can be shared.
 - Every page is plain HTML generated at build time, so it loads fast, ranks well and works without JavaScript.
 - Search-ready: unique titles and descriptions, canonical links, share cards (Open Graph images) for every drive, structured data (TouristTrip, ItemList, BreadcrumbList, Article), `sitemap.xml` and `robots.txt`.
@@ -21,6 +25,26 @@ You need Node 18 or newer. There are no runtime dependencies.
 | `npm run build` | Builds the site into `dist/`. Deploy this folder. |
 | `npm run preview` | Builds a copy into `preview/` with relative links and visible ad placeholders. |
 | `npm run images` | Re-renders the scene pictures, share cards and icons (needs `npm i` and `npx playwright install chromium` first). |
+
+### Checks
+
+Install the dev tools once with `npm ci`, plus `npx playwright install chromium` for the browser checks. CI runs all of these on every push (see `.github/workflows/ci.yml`).
+
+| Command | What it checks |
+| --- | --- |
+| `npm test` | Content validation, level maths, the built site's links, ids and sitemap, and the trip planner evaluation (fails under 90% correct). |
+| `npm run eval` | Just the planner evaluation, listing every wrong answer. See [docs/planner-eval.md](docs/planner-eval.md). |
+| `npm run typecheck` | `tsc --checkJs` over the JavaScript, with strict mode for `src/shared/`. |
+| `npm run validate-html` | Every built page against html-validate's recommended rules (run `npm run build` first). |
+| `npm run audit` | Every page in Chromium at 320, 390 and 1280 px: axe-core WCAG 2.2 AA, console errors, overflow, keyboard traps, the planner and map keyboard behaviour. Add `--dark` for the dark colour scheme. |
+| `npm run lighthouse` | Lighthouse on six key pages, median of three runs. CI uses `lighthouserc.json`, which fails under 90 for mobile performance and 95 for accessibility, best practices and SEO. |
+| `npm run page-weight` | Bytes and requests for every page as a phone loads it. |
+| `npm run check-links` | Every external link (CI runs it weekly, as other sites go down). |
+| `npm run check-seo` | Structured data against the schema.org vocabulary, Google's required fields, canonical URLs against the sitemap, robots.txt and Open Graph images (run `npm run build` first). |
+| `node scripts/geocode-stops.mjs` | Rebuilds `src/content/coords.json` for the GPX files: keeps a stop's position only where OpenStreetMap and Wikidata agree within 1.5 km. |
+| `node scripts/commons-shortlist.mjs` | Lists Wikimedia Commons photos per drive that meet the licence and size rules. Downloads nothing; every photo needs checking and approving by hand. |
+
+Results and history are in [docs/metrics.md](docs/metrics.md) and [docs/accessibility.md](docs/accessibility.md). Every fact checked against an official source, and what changed, is in [docs/fact-check.md](docs/fact-check.md).
 
 ## Where things live
 
@@ -41,58 +65,11 @@ You need Node 18 or newer. There are no runtime dependencies.
 
 ## Launch checklist
 
-The fastest way live: buy the domain and host the site on Cloudflare (free), uploading the ready-built folder. About 20 minutes.
+The site is hosted on Cloudflare Pages, built from GitHub, so every push to `main` redeploys it. Pages Functions (click events, AI answers) need the Git integration, so don't upload `dist` by hand.
 
-### 1. Make a Cloudflare account and buy the domain
+Every step that needs your account or a payment, in order, with the exact click paths and how each is checked: [docs/launch-checklist.md](docs/launch-checklist.md). Cloudflare Pages build settings: framework preset **None**, build command `npm run build`, build output directory `dist`. Node 22 comes from `.nvmrc`.
 
-Sign up at [cloudflare.com](https://dash.cloudflare.com/sign-up). Under **Domain Registration > Register Domains**, search for `nineroadsout.com` and buy it. It was about $11 a year when checked in October 2026, and Cloudflare sells domains at cost. If you pick a different name, change `siteUrl` in `site.config.mjs` and rebuild before uploading.
-
-Buy the domain before you launch: every page's canonical link and share card points at `siteUrl`.
-
-### 2. Upload the site
-
-Vercel's free Hobby plan does not allow ads or affiliate-led sites ([fair use guidelines](https://vercel.com/docs/limits/fair-use-guidelines)), so use Cloudflare Pages.
-
-1. In the Cloudflare dashboard, open **Workers & Pages**, choose **Create**, then the **Pages** tab, then **Upload assets** (the wording may shift slightly as Cloudflare updates its dashboard).
-2. Name the project `nineroadsout` and upload the contents of the `dist` folder, or the `nine-roads-out-upload.zip` file, which is the same thing.
-3. When it's deployed, open the project's **Custom domains** tab and add `nineroadsout.com`. Add `www.nineroadsout.com` too if you like.
-
-To update the site later, run `npm run build` and upload `dist` again as a new deployment.
-
-**Automatic deploys instead (recommended once you're editing regularly):** push this folder to a GitHub repository and create the Pages project with **Connect to Git** instead. Build command `node src/build.mjs`, output directory `dist`. Every push then redeploys the site, and it's required if you switch on the AI planner.
-
-Netlify (free) and Vercel Pro (paid) also work: `netlify.toml` and `vercel.json` already set the build. The `_headers` file sets long caching for fonts, scripts and images on Cloudflare and Netlify.
-
-### 3. Make the contact address work
-
-The site lists `hello@nineroadsout.com` (set in `contactEmail`). In Cloudflare, open the domain, then **Email > Email Routing**, and create `hello@` with your own inbox as the destination. It's free, and you reply from your normal email. AdSense reviewers look for a working contact route.
-
-### 4. Tell Google the site exists
-
-Add the domain in [Google Search Console](https://search.google.com/search-console), verify it (Cloudflare can add the DNS record for you), and submit `https://nineroadsout.com/sitemap.xml`. Do the same in [Bing Webmaster Tools](https://www.bing.com/webmasters), which can import from Search Console in one click.
-
-### 5. Apply for Google AdSense (not on day one)
-
-Wait until the site has some visitors from search and you've added a few more pages or your own photos. "Low value content" is a common reason small sites are turned down, and it's easier to be approved first time than to reapply.
-
-1. Apply at [adsense.google.com](https://adsense.google.com) with your domain. Google reviews the whole site, which can take from a few days to a few weeks.
-2. Paste your publisher ID (`ca-pub-…`) into `adsense.client` and redeploy. This adds the AdSense script, the verification tag and `ads.txt`.
-3. In AdSense, open **Privacy & messaging** and turn on the European regulations (GDPR) message. Visitors in the EEA, UK and Switzerland must consent before personalised ads, and this is Google's own certified consent tool, so you don't need anything else. The "Cookie settings" link in the footer reopens it.
-4. Either switch on **Auto ads**, or create ad units and paste their IDs into `adsense.slots`. They will appear in the reserved spaces: one on the home page, three on each drive page, and one each in the driving guide, the car hire guide and the theme pages.
-
-### 6. Join the affiliate programmes
-
-Sign up with the partners in `site.config.mjs` (Discover Cars, Booking.com, GetYourGuide) or your own choices. Paste each tracked link into `affiliates`, keeping `{q}` where the place name should go. Links already carry `rel="sponsored"`, and every booking box and the footer disclose that they are affiliate links.
-
-Do this on day one. Some programmes review your site before approving it, but they're generally less strict about traffic than AdSense, and the car hire guide is written to send people to car hire.
-
-### 7. Analytics
-
-Turn on Cloudflare Web Analytics for the Pages project. It is cookieless, so it needs no consent. If you host elsewhere, paste the token into `analytics.cloudflareToken`.
-
-### 8. Optional: newsletter
-
-Create a free list with Buttondown, Kit or Mailchimp, copy its embed form's action URL and email field name into `newsletter` in `site.config.mjs`, and rebuild. The sign-up box then appears on the home page, every drive page and the theme pages, and the Privacy page gains a newsletter section.
+`netlify.toml` and `vercel.json` set the same build for those hosts, but the site is tested on Cloudflare Pages, and the click events and AI answers only work there.
 
 ## Earning from the site
 
@@ -146,7 +123,9 @@ By default the planner answers from the site's data and, when it doesn't underst
 2. Create an API key in the [Claude Console](https://console.anthropic.com) and set a monthly spend limit there.
 3. In the Cloudflare Pages project, open **Settings > Variables and Secrets** and add a secret called `ANTHROPIC_API_KEY` with the key. Optionally add `CHAT_MODEL` to use a different model.
 4. Set `chat.ai` to `true` in `site.config.mjs` and push. The build generates `functions/api/chat.js` with the site's drives and restaurants built in, and Cloudflare serves it at `/api/chat`.
-5. Add a rate limiting rule in Cloudflare (**Security > WAF > Rate limiting rules**) for requests to `/api/chat`, for example 10 requests per 10 seconds per IP, so nobody can run up your bill.
+5. The function limits AI answers per visitor (5 a minute) and, with a KV binding called `CHAT_LIMITS`, per visitor per day and for the whole site per day. Set the limits in `chat.limits`. For a hard limit at the edge as well, add a rate limiting rule in Cloudflare (**Security > WAF > Rate limiting rules**) for `/api/chat`.
+
+Full setup, costs and what's tested: [docs/ai-planner.md](docs/ai-planner.md).
 
 The back end only accepts requests from your own domain, sends at most the last eight messages, and keeps replies short. Claude is told to recommend only the drives and places on the site and not to invent opening hours or prices. When it's on, the Privacy page automatically says that unanswered planner questions are sent to Anthropic to generate a reply.
 

@@ -1,0 +1,300 @@
+{
+  "glendalough": [
+    {
+      "n": "Glencree",
+      "lat": 53.1997,
+      "lon": -6.29377,
+      "osm": "https://www.openstreetmap.org/node/52222849",
+      "wikidata": "https://www.wikidata.org/wiki/Q1205321",
+      "km": 0.16
+    },
+    {
+      "n": "Sally Gap",
+      "lat": 53.13774,
+      "lon": -6.31197,
+      "osm": "https://www.openstreetmap.org/node/219056481",
+      "wikidata": "https://www.wikidata.org/wiki/Q3469980",
+      "km": 0.02
+    },
+    {
+      "n": "Lough Tay viewpoint",
+      "lat": 53.10588,
+      "lon": -6.2673,
+      "osm": "https://www.openstreetmap.org/way/4896047",
+      "wikidata": "https://www.wikidata.org/wiki/Q3074707",
+      "km": 0.04
+    },
+    {
+      "n": "Glenmacnass Waterfall",
+      "lat": 53.06446,
+      "lon": -6.33708,
+      "osm": "https://www.openstreetmap.org/node/3242732697",
+      "wikidata": "https://www.wikidata.org/wiki/Q15221764",
+      "km": 0.03
+    },
+    {
+      "n": "Glendalough",
+      "lat": 53.01082,
+      "lon": -6.32634,
+      "osm": "https://www.openstreetmap.org/way/1523041047",
+      "wikidata": "https://www.wikidata.org/wiki/Q691153",
+      "km": 0.1
+    }
+  ],
+  "boyne": [
+    {
+      "n": "Monasterboice",
+      "lat": 53.77318,
+      "lon": -6.41741,
+      "osm": "https://www.openstreetmap.org/relation/6064851",
+      "wikidata": "https://www.wikidata.org/wiki/Q60555967",
+      "km": 0.01
+    },
+    {
+      "n": "Brú na Bóinne",
+      "lat": 53.69466,
+      "lon": -6.4467,
+      "osm": "https://www.openstreetmap.org/node/12455966090",
+      "wikidata": "https://www.wikidata.org/wiki/Q4981923",
+      "km": 0.03
+    },
+    {
+      "n": "Hill of Slane",
+      "lat": 53.71714,
+      "lon": -6.54353,
+      "osm": "https://www.openstreetmap.org/node/661147792",
+      "wikidata": "https://www.wikidata.org/wiki/Q5639588",
+      "km": 0.05
+    },
+    {
+      "n": "Hill of Tara",
+      "lat": 53.57996,
+      "lon": -6.61217,
+      "osm": "https://www.openstreetmap.org/node/722463164",
+      "wikidata": "https://www.wikidata.org/wiki/Q543155",
+      "km": 0.27
+    }
+  ],
+  "cooley": [
+    {
+      "n": "Proleek Dolmen",
+      "lat": 54.03719,
+      "lon": -6.34825,
+      "osm": "https://www.openstreetmap.org/way/1336445713",
+      "wikidata": "https://www.wikidata.org/wiki/Q2112637",
+      "km": 0.03
+    },
+    {
+      "n": "Carlingford",
+      "lat": 54.04108,
+      "lon": -6.18651,
+      "osm": "https://www.openstreetmap.org/relation/14578143",
+      "wikidata": "https://www.wikidata.org/wiki/Q111011935",
+      "km": 0.1
+    },
+    {
+      "n": "Omeath",
+      "lat": 54.08694,
+      "lon": -6.26167,
+      "osm": "https://www.openstreetmap.org/relation/14612647",
+      "wikidata": "https://www.wikidata.org/wiki/Q2081801",
+      "km": 0.4
+    },
+    {
+      "n": "Long Woman’s Grave, Windy Gap",
+      "skipped": "not found in OpenStreetMap"
+    }
+  ],
+  "loughcrew": [
+    {
+      "n": "Kells",
+      "lat": 53.72718,
+      "lon": -6.87679,
+      "osm": "https://www.openstreetmap.org/relation/14583994",
+      "wikidata": "https://www.wikidata.org/wiki/Q917848",
+      "km": 0.11
+    },
+    {
+      "n": "Loughcrew Cairns",
+      "lat": 53.72521,
+      "lon": -7.11795,
+      "osm": "https://www.openstreetmap.org/relation/4739822",
+      "wikidata": "https://www.wikidata.org/wiki/Q60555777",
+      "km": 0.16
+    },
+    {
+      "n": "Fore Abbey",
+      "lat": 53.68397,
+      "lon": -7.22776,
+      "osm": "https://www.openstreetmap.org/way/301057991",
+      "wikidata": "https://www.wikidata.org/wiki/Q135583638",
+      "km": 0.04
+    }
+  ],
+  "slievebloom": [
+    {
+      "n": "The Cut",
+      "skipped": "no Wikidata coordinate nearby"
+    },
+    {
+      "n": "Kinnitty",
+      "lat": 53.09772,
+      "lon": -7.72045,
+      "osm": "https://www.openstreetmap.org/relation/14607796",
+      "wikidata": "https://www.wikidata.org/wiki/Q113813477",
+      "km": 0.18
+    },
+    {
+      "n": "Birr Castle",
+      "lat": 53.09534,
+      "lon": -7.91476,
+      "osm": "https://www.openstreetmap.org/way/419215618",
+      "wikidata": "https://www.wikidata.org/wiki/Q2419871",
+      "km": 0.05
+    },
+    {
+      "n": "Clonmacnoise",
+      "lat": 53.32631,
+      "lon": -7.98574,
+      "osm": "https://www.openstreetmap.org/relation/15513218",
+      "wikidata": "https://www.wikidata.org/wiki/Q106628033",
+      "km": 0.05
+    }
+  ],
+  "leinster": [
+    {
+      "n": "Brownshill Dolmen",
+      "lat": 52.83755,
+      "lon": -6.88112,
+      "osm": "https://www.openstreetmap.org/node/1211210182",
+      "wikidata": "https://www.wikidata.org/wiki/Q33313",
+      "km": 0.01
+    },
+    {
+      "n": "Borris",
+      "lat": 52.94897,
+      "lon": -7.83245,
+      "osm": "https://www.openstreetmap.org/relation/5335040",
+      "wikidata": "https://www.wikidata.org/wiki/Q16255240",
+      "km": 0.03
+    },
+    {
+      "n": "Nine Stones",
+      "skipped": "no Wikidata coordinate nearby"
+    },
+    {
+      "n": "Bunclody",
+      "lat": 52.65511,
+      "lon": -6.65205,
+      "osm": "https://www.openstreetmap.org/relation/14571820",
+      "wikidata": "https://www.wikidata.org/wiki/Q122207507",
+      "km": 0.23
+    }
+  ],
+  "cashel": [
+    {
+      "n": "Rock of Cashel",
+      "lat": 52.52018,
+      "lon": -7.89064,
+      "osm": "https://www.openstreetmap.org/relation/2836753",
+      "wikidata": "https://www.wikidata.org/wiki/Q134688319",
+      "km": 0.01
+    },
+    {
+      "n": "Hore Abbey",
+      "lat": 52.5187,
+      "lon": -7.8979,
+      "osm": "https://www.openstreetmap.org/way/1038772735",
+      "wikidata": "https://www.wikidata.org/wiki/Q1628074",
+      "km": 0.19
+    },
+    {
+      "n": "Cahir Castle",
+      "lat": 52.37455,
+      "lon": -7.92716,
+      "osm": "https://www.openstreetmap.org/relation/12210683",
+      "wikidata": "https://www.wikidata.org/wiki/Q764573",
+      "km": 0
+    },
+    {
+      "n": "The Vee",
+      "skipped": "closest sources 55.9 km apart (The Vee, R668, Tullaghorton, The Municipal District of Cahir — Cashel, County Tipperary, Munster, Éire / Ireland / The Vee B&B (hotel in Waterford, Ireland))"
+    }
+  ],
+  "copper": [
+    {
+      "n": "Metal Man, Tramore",
+      "skipped": "not found in OpenStreetMap"
+    },
+    {
+      "n": "Annestown",
+      "lat": 52.14068,
+      "lon": -7.27482,
+      "osm": "https://www.openstreetmap.org/node/1376009698",
+      "wikidata": "https://www.wikidata.org/wiki/Q3776949",
+      "km": 0.19
+    },
+    {
+      "n": "Tankardstown engine house",
+      "lat": 52.44903,
+      "lon": -8.53286,
+      "osm": "https://www.openstreetmap.org/relation/6038909",
+      "wikidata": "https://www.wikidata.org/wiki/Q104313381",
+      "km": 0.12
+    },
+    {
+      "n": "Bunmahon",
+      "lat": 52.14061,
+      "lon": -7.36792,
+      "osm": "https://www.openstreetmap.org/node/10047298833",
+      "wikidata": "https://www.wikidata.org/wiki/Q26717529",
+      "km": 0.54
+    },
+    {
+      "n": "Clonea Strand",
+      "skipped": "no Wikidata coordinate nearby"
+    }
+  ],
+  "hook": [
+    {
+      "n": "Tintern Abbey",
+      "lat": 52.23692,
+      "lon": -6.83793,
+      "osm": "https://www.openstreetmap.org/way/1136543802",
+      "wikidata": "https://www.wikidata.org/wiki/Q2435969",
+      "km": 0.01
+    },
+    {
+      "n": "Fethard-on-Sea and Baginbun",
+      "lat": 52.1735,
+      "lon": -6.8289,
+      "osm": "https://www.openstreetmap.org/node/2585892039",
+      "wikidata": "https://www.wikidata.org/wiki/Q122845113",
+      "km": 0.08
+    },
+    {
+      "n": "Hook Lighthouse",
+      "lat": 52.12376,
+      "lon": -6.92946,
+      "osm": "https://www.openstreetmap.org/way/87606863",
+      "wikidata": "https://www.wikidata.org/wiki/Q5897891",
+      "km": 0.01
+    },
+    {
+      "n": "Loftus Hall",
+      "lat": 52.14866,
+      "lon": -6.9106,
+      "osm": "https://www.openstreetmap.org/way/125512173",
+      "wikidata": "https://www.wikidata.org/wiki/Q15242617",
+      "km": 0.1
+    },
+    {
+      "n": "Duncannon Fort",
+      "lat": 52.22094,
+      "lon": -6.93658,
+      "osm": "https://www.openstreetmap.org/way/92966401",
+      "wikidata": "https://www.wikidata.org/wiki/Q28232341",
+      "km": 0.02
+    }
+  ]
+}

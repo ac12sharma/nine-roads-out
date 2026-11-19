@@ -4,14 +4,29 @@
   "private": true,
   "description": "Nine Roads Out: the most beautiful day drives from Dublin. Static site, no runtime dependencies.",
   "type": "module",
-  "engines": { "node": ">=18" },
+  "engines": {
+    "node": ">=18"
+  },
   "scripts": {
     "build": "node src/build.mjs",
     "preview": "node src/build.mjs --preview",
     "images": "node scripts/render-images.mjs",
-    "serve": "npm run build && npx --yes serve dist"
+    "serve": "npm run build && node scripts/serve.mjs dist",
+    "audit": "node scripts/audit-pages.mjs",
+    "check-links": "node scripts/check-links.mjs",
+    "lighthouse": "node scripts/lighthouse.mjs",
+    "test": "node --test tests/*.test.mjs",
+    "typecheck": "tsc -p . && tsc -p tsconfig.strict.json",
+    "validate-html": "html-validate \"dist/**/*.html\"",
+    "page-weight": "node scripts/page-weight.mjs",
+    "eval": "node --test tests/planner-eval.test.mjs",
+    "check-seo": "node scripts/check-seo.mjs"
   },
   "devDependencies": {
-    "playwright": "^1.48.0"
+    "@types/node": "^24.10.1",
+    "axe-core": "^4.14.0",
+    "html-validate": "^11.17.0",
+    "playwright": "^1.48.0",
+    "typescript": "^5.9.3"
   }
 }
